@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Wallet, Eye, EyeOff, AlertCircle } from "lucide-react"
+import { AuthService } from "@/services/auth"
+import { useOnline } from "@/hooks/use-online"
+import { saveLocalUser, checkLocalUser } from "@/lib/sqlite"
 
 interface LoginScreenProps {
   onLogin: (userData: any) => void
@@ -19,7 +22,9 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({})
+
+  const isOnline = useOnline();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -46,19 +51,47 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
+    setErrors({}); // Clear any previous errors
 
-    // Simulate login
-    setTimeout(() => {
-      onLogin({ email, name: "Utilisateur" })
-      setIsLoading(false)
-    }, 1000)
+    if (isOnline) {
+      // Authentification en ligne (backend)
+      try {
+        const loginResponse = await AuthService.login({
+          email: email.trim(),
+          password: password
+        });
+        // Sauvegarde locale pour usage offline
+        await saveLocalUser(email.trim(), password);
+        onLogin(loginResponse.user);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Erreur lors de la connexion";
+        setErrors({ general: errorMessage });
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Authentification offline (locale)
+      try {
+        const result = await checkLocalUser(email.trim(), password);
+        if (result && result.dateCreation) {
+          // On simule un user minimal pour le mode offline
+          onLogin({ email: email.trim(), offline: true, dateCreation: result.dateCreation });
+        } else {
+          setErrors({ general: "Identifiants invalides (mode hors-ligne)" });
+        }
+      } catch (error) {
+        setErrors({ general: "Erreur lors de la vérification locale" });
+      } finally {
+        setIsLoading(false);
+      }
+    }
   }
 
   return (
@@ -74,6 +107,14 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
           </div>
         </CardHeader>
         <CardContent>
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex items-center gap-2 text-red-700 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                {errors.general}
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

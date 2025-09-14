@@ -9,8 +9,10 @@ import { Loans } from "@/components/loans"
 import { Goals } from "@/components/goals"
 import { Gamification } from "@/components/gamification"
 import { AddExpenseModal } from "@/components/add-expense-modal"
+import { NetworkStatusToast } from "@/components/network-status-toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { useOnline } from "@/hooks/use-online"
 import {
   Home,
   CreditCard,
@@ -26,6 +28,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react"
+import { initDatabase } from "@/lib/sqlite";
 
 interface MainAppProps {
   user: any
@@ -36,7 +39,7 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [showFabOptions, setShowFabOptions] = useState(false)
-  const [isOnline, setIsOnline] = useState(true)
+  const isOnline = useOnline() // Utilisation du hook pour la détection dynamique
   const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
 
   const [userStats, setUserStats] = useState({
@@ -107,16 +110,20 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   ])
 
   useEffect(() => {
+    initDatabase()
+      .then(() => console.log("📦 Base SQLite initialisée"))
+      .catch((err) => console.error("Erreur SQLite:", err));
+
     const handleOnline = () => {
-      setIsOnline(true)
       setSyncStatus("syncing")
-      // Simulate sync
+      console.log('🔄 Connexion rétablie, synchronisation en cours...')
+      // Simuler la synchronisation
       setTimeout(() => setSyncStatus("synced"), 2000)
     }
 
     const handleOffline = () => {
-      setIsOnline(false)
       setSyncStatus("offline")
+      console.log('📱 Mode hors ligne activé')
     }
 
     window.addEventListener("online", handleOnline)
@@ -187,6 +194,9 @@ export function MainApp({ user, onLogout }: MainAppProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Toast de statut réseau */}
+      <NetworkStatusToast />
+      
       <div className="fixed top-0 left-0 right-0 z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">

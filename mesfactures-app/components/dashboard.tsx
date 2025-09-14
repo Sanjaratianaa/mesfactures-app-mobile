@@ -75,7 +75,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
       <div className="pt-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Bonjour, {user.name.split(" ")[0]} 👋</h1>
+            <h1 className="text-2xl font-bold text-foreground">Bonjour, {user.username || user.name || 'Utilisateur'}</h1>
             <p className="text-muted-foreground">Voici un aperçu de vos finances</p>
           </div>
           <div className="flex items-center gap-2">
