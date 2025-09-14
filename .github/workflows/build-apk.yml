@@ -39,6 +39,10 @@ jobs:
     - name: Build Next.js app
       run: npm run build
 
+    # Optionnel: Installer bcryptjs pour l'environnement mobile
+    - name: Install mobile-specific dependencies
+      run: npm install bcryptjs @types/bcryptjs --no-save
+
     - name: Capacitor sync
       run: npx cap sync android
 

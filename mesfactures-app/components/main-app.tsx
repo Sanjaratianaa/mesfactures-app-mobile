@@ -28,7 +28,6 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react"
-import { initDatabase } from "@/lib/sqlite";
 
 interface MainAppProps {
   user: any
@@ -41,6 +40,9 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   const [showFabOptions, setShowFabOptions] = useState(false)
   const isOnline = useOnline() // Utilisation du hook pour la détection dynamique
   const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
+
+  // Détection de la plateforme
+  const isMobile = typeof window !== 'undefined' && (window as any).Capacitor;
 
   const [userStats, setUserStats] = useState({
     level: 3,
@@ -110,13 +112,26 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   ])
 
   useEffect(() => {
-    initDatabase()
-      .then(() => console.log("📦 Base SQLite initialisée"))
-      .catch((err) => console.error("Erreur SQLite:", err));
+    // Initialiser la base SQLite seulement sur mobile
+    const initializeMobileDatabase = async () => {
+      if (isMobile) {
+        try {
+          const { initDatabase } = await import('@/lib/sqlite.mobile');
+          await initDatabase();
+          console.log("📦 Base SQLite initialisée (mobile)");
+        } catch (err) {
+          console.error("Erreur SQLite:", err);
+        }
+      } else {
+        console.log("🌐 Mode web - pas d'initialisation SQLite locale");
+      }
+    };
+
+    initializeMobileDatabase();
 
     const handleOnline = () => {
       setSyncStatus("syncing")
-      console.log('🔄 Connexion rétablie, synchronisation en cours...')
+      console.log('📶 Connexion rétablie, synchronisation en cours...')
       // Simuler la synchronisation
       setTimeout(() => setSyncStatus("synced"), 2000)
     }
@@ -133,7 +148,7 @@ export function MainApp({ user, onLogout }: MainAppProps) {
       window.removeEventListener("online", handleOnline)
       window.removeEventListener("offline", handleOffline)
     }
-  }, [])
+  }, [isMobile])
 
   const addTransaction = (transaction: any) => {
     const newTransaction = {
@@ -208,6 +223,11 @@ export function MainApp({ user, onLogout }: MainAppProps) {
               <span className={`text-xs ${isOnline ? "text-green-600" : "text-red-600"}`}>
                 {isOnline ? "En ligne" : "Hors ligne"}
               </span>
+              {process.env.NODE_ENV === 'development' && (
+                <span className="text-xs text-gray-400 ml-2">
+                  ({isMobile ? 'Mobile' : 'Web'})
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -241,10 +261,16 @@ export function MainApp({ user, onLogout }: MainAppProps) {
           </div>
         </div>
 
-        {!isOnline && (
+        {!isOnline && isMobile && (
           <div className="bg-red-500 text-white text-center py-2 text-sm">
             <WifiOff className="w-4 h-4 inline mr-2" />
             Mode hors ligne - Les données seront synchronisées à la reconnexion
+          </div>
+        )}
+        {!isOnline && !isMobile && (
+          <div className="bg-orange-500 text-white text-center py-2 text-sm">
+            <WifiOff className="w-4 h-4 inline mr-2" />
+            Connexion requise pour utiliser l'application web
           </div>
         )}
         {syncStatus === "syncing" && (

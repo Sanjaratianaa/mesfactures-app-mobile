@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Wallet, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { AuthService } from "@/services/auth"
 import { useOnline } from "@/hooks/use-online"
-import { saveLocalUser, checkLocalUser } from "@/lib/sqlite"
 
 interface LoginScreenProps {
   onLogin: (userData: any) => void
@@ -25,6 +24,9 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({})
 
   const isOnline = useOnline();
+  
+  // Détection de la plateforme
+  const isMobile = typeof window !== 'undefined' && (window as any).Capacitor;
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -67,8 +69,13 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
           email: email.trim(),
           password: password
         });
-        // Sauvegarde locale pour usage offline
-        await saveLocalUser(email.trim(), password);
+        
+        // Sauvegarde locale pour usage offline (seulement sur mobile)
+        if (isMobile) {
+          const { saveLocalUser } = await import('@/lib/sqlite.mobile');
+          await saveLocalUser(email.trim(), password);
+        }
+        
         onLogin(loginResponse.user);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Erreur lors de la connexion";
@@ -77,12 +84,20 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
         setIsLoading(false);
       }
     } else {
-      // Authentification offline (locale)
+      // Authentification offline (locale) - seulement sur mobile
+      if (!isMobile) {
+        setErrors({ general: "L'authentification hors ligne n'est disponible que sur mobile" });
+        setIsLoading(false);
+        return;
+      }
+
       try {
+        const { checkLocalUser } = await import('@/lib/sqlite.mobile');
         const result = await checkLocalUser(email.trim(), password);
-        if (result && result.dateCreation) {
+        
+        if (result) {
           // On simule un user minimal pour le mode offline
-          onLogin({ email: email.trim(), offline: true, dateCreation: result.dateCreation });
+          onLogin({ email: email.trim(), offline: true, dateCreation: new Date().toISOString() });
         } else {
           setErrors({ general: "Identifiants invalides (mode hors-ligne)" });
         }
@@ -183,6 +198,13 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
               </Button>
             </p>
           </div>
+          
+          {/* Indicateur de plateforme pour debug */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 text-center text-xs text-muted-foreground">
+              Plateforme: {isMobile ? 'Mobile (Capacitor)' : 'Web'}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
