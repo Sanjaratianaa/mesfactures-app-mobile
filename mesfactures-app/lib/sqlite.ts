@@ -4,7 +4,13 @@ const sqlite = new SQLiteConnection(CapacitorSQLite);
 
 export async function initDatabase(): Promise<SQLiteDBConnection> {
   // Ouvre ou crée la base
-  const db = await sqlite.createConnection('mesfactures', false, 'no-encryption', 1);
+  const db = await sqlite.createConnection(
+    'mesfactures',
+    false,
+    'no-encryption',
+    1,
+    false
+  );
 
   // Ouvre la connexion
   await db.open();
