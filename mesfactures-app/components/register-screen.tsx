@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Wallet, Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react"
+import { AuthService } from "@/services/auth"
 
 interface RegisterScreenProps {
   onRegister: (userData: any) => void
@@ -15,6 +16,7 @@ interface RegisterScreenProps {
 }
 
 export function RegisterScreen({ onRegister, onBackToLogin }: RegisterScreenProps) {
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -31,6 +33,7 @@ export function RegisterScreen({ onRegister, onBackToLogin }: RegisterScreenProp
     email?: string
     password?: string
     confirmPassword?: string
+    general?: string
   }>({})
 
   const validateEmail = (email: string) => {
@@ -74,20 +77,38 @@ export function RegisterScreen({ onRegister, onBackToLogin }: RegisterScreenProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    console.log('🔥 handleSubmit called!')
+    console.log('📝 Form data:', formData)
+
     if (!validateForm()) {
+      console.log('❌ Form validation failed')
       return
     }
 
+    console.log('✅ Form validation passed, starting registration...')
     setIsLoading(true)
+    setErrors({}) // Clear any previous errors
 
-    // Simulate registration
-    setTimeout(() => {
-      onRegister({
-        email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`,
+    try {
+      const registerResponse = await AuthService.register({
+        nom: formData.lastName.trim(),
+        prenoms: formData.firstName.trim(),
+        email: formData.email.trim(),
+        motDePasse: formData.password,
+        statut: "Active",
+        roleLibelle: "User" // Default role for new users
       })
+
+      // Show success message and navigate back to login
+      alert(registerResponse.message || "Inscription réussie ! Vous pouvez maintenant vous connecter.")
+      onBackToLogin()
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de l'inscription"
+      setErrors({ general: errorMessage })
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -113,6 +134,14 @@ export function RegisterScreen({ onRegister, onBackToLogin }: RegisterScreenProp
           </div>
         </CardHeader>
         <CardContent>
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex items-center gap-2 text-red-700 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                {errors.general}
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

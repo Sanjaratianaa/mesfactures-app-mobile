@@ -3,7 +3,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { User, Settings, Bell, HelpCircle, LogOut, ChevronRight } from "lucide-react"
+import { User, Settings, Bell, HelpCircle, LogOut, ChevronRight, Wifi, WifiOff } from "lucide-react"
+import { useOnline } from "@/hooks/use-online"
 
 interface ProfileProps {
   user: any
@@ -11,21 +12,68 @@ interface ProfileProps {
 }
 
 export function Profile({ user, onLogout }: ProfileProps) {
+  const isOnline = useOnline()
+  
   const menuItems = [
     { icon: Settings, label: "Paramètres", action: () => {} },
     { icon: Bell, label: "Notifications", action: () => {} },
     { icon: HelpCircle, label: "Aide & Support", action: () => {} },
   ]
 
+  // Log user data pour debugging
+  console.log('👤 User data in Profile:', user)
+
+  // Fonction pour formater la date de création
+  const formatMemberSince = (user: any) => {
+    // Si l'utilisateur a une date de création
+    if (user.dateCreation || user.createdAt || user.created_at) {
+      const dateCreation = new Date(user.dateCreation || user.createdAt || user.created_at)
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', 
+        month: 'long' 
+      }
+      return `Membre depuis ${dateCreation.toLocaleDateString('fr-FR', options)}`
+    }
+    
+    // Si pas de date, utiliser la date actuelle comme fallback
+    const now = new Date()
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long' 
+    }
+    return `Membre depuis ${now.toLocaleDateString('fr-FR', options)}`
+  }
+
   return (
     <div className="p-4 space-y-6">
-      {/* Header */}
+      {/* Header avec statut de connexion */}
       <div className="pt-4">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <User className="w-6 h-6 text-primary" />
-          Profil
-        </h1>
-        <p className="text-muted-foreground">Gérez votre compte</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <User className="w-6 h-6 text-primary" />
+              Profil
+            </h1>
+            <p className="text-muted-foreground">Gérez votre compte</p>
+          </div>
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+            isOnline 
+              ? 'bg-green-100 text-green-700 border border-green-200' 
+              : 'bg-red-100 text-red-700 border border-red-200'
+          }`}>
+            {isOnline ? (
+              <>
+                <Wifi className="w-4 h-4" />
+                En ligne
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4" />
+                Hors ligne
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* User Info Card */}
@@ -34,16 +82,15 @@ export function Profile({ user, onLogout }: ProfileProps) {
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16">
               <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
-                {user.name
-                  .split(" ")
-                  .map((n: string) => n[0])
-                  .join("")}
+                {(user.username || user.name || 'U')
+                  .substring(0, 2)
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-xl font-bold text-foreground">{user.name}</h2>
+              <h2 className="text-xl font-bold text-foreground">{user.username || user.name || 'Utilisateur'}</h2>
               <p className="text-muted-foreground">{user.email}</p>
-              <p className="text-sm text-primary font-medium mt-1">Membre depuis janvier 2024</p>
+              <p className="text-sm text-primary font-medium mt-1">{formatMemberSince(user)}</p>
             </div>
           </div>
         </CardContent>
