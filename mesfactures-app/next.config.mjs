@@ -3,8 +3,7 @@ import withPWA from 'next-pwa'
 
 const nextConfig = withPWA({
   dest: 'public',
-  // ACTIVER PWA même en développement
-  disable: false, // ← Changé !
+  disable: false,
   register: true,
   skipWaiting: true,
   runtimeCaching: [],
@@ -14,12 +13,12 @@ const finalConfig = {
   ...nextConfig,
   // DÉSACTIVER export pour le développement
   // output: 'export', // ← Complètement commenté
+  output: 'export', // ← Complètement commenté
   trailingSlash: true,
   images: {
-    unoptimized: true
+    unoptimized: true,
   },
-  
-  // Configuration CSP permissive pour dev
+
   async headers() {
     return [
       {
@@ -27,19 +26,31 @@ const finalConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: process.env.NODE_ENV === 'development' 
-              ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:*; img-src 'self' data: blob:;"
-              : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+            value:
+              process.env.NODE_ENV === 'development'
+                ? `
+                  default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;
+                  script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:;
+                  worker-src 'self' blob:;
+                  style-src 'self' 'unsafe-inline';
+                  connect-src 'self' data: http://localhost:* ws://localhost:* wss://localhost:*;
+                  img-src 'self' data: blob:;
+                `.replace(/\s{2,}/g, ' ')
+                : `
+                  default-src 'self';
+                  script-src 'self' 'unsafe-inline';
+                  worker-src 'self';
+                  style-src 'self' 'unsafe-inline';
+                `.replace(/\s{2,}/g, ' '),
           },
         ],
       },
     ]
   },
 
-  // GARDER les console.log en développement
   compiler: {
-    removeConsole: false // ← Complètement désactivé en dev
-  }
+    removeConsole: false,
+  },
 }
 
 export default finalConfig

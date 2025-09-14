@@ -9,6 +9,8 @@ import { Loans } from "@/components/loans"
 import { Goals } from "@/components/goals"
 import { Gamification } from "@/components/gamification"
 import { AddExpenseModal } from "@/components/add-expense-modal"
+import { AddInvoiceModal } from "@/components/add-invoice-modal"
+import { FileText } from "lucide-react"
 import { NetworkStatusToast } from "@/components/network-status-toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +41,7 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [showFabOptions, setShowFabOptions] = useState(false)
+  const [showAddInvoice, setShowAddInvoice] = useState(false)
   const isOnline = useOnline() // Utilisation du hook pour la détection dynamique
   const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
 
@@ -287,6 +290,16 @@ export function MainApp({ user, onLogout }: MainAppProps) {
             >
               <TrendingUp className="w-5 h-5 text-white" />
             </Button>
+            <Button
+              className="w-12 h-12 rounded-full bg-green-700 hover:bg-green-800 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+              onClick={() => {
+                setShowAddInvoice(true)
+                setShowFabOptions(false)
+              }}
+              title="Ajouter une facture (OCR)"
+            >
+              <FileText className="w-5 h-5 text-white" />
+            </Button>
           </div>
         )}
         <Button
@@ -323,8 +336,10 @@ export function MainApp({ user, onLogout }: MainAppProps) {
         </div>
       </div>
 
-      {/* Add Expense Modal */}
-      <AddExpenseModal open={showAddExpense} onClose={() => setShowAddExpense(false)} onAdd={addTransaction} />
+  {/* Add Expense Modal */}
+  <AddExpenseModal open={showAddExpense} onClose={() => setShowAddExpense(false)} onAdd={addTransaction} />
+  {/* Add Invoice Modal (OCR) */}
+  <AddInvoiceModal open={showAddInvoice} onClose={() => setShowAddInvoice(false)} />
     </div>
   )
 }
