@@ -1,5 +1,4 @@
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
-import * as bcrypt from 'bcryptjs';
 
 const sqlite = new SQLiteConnection(CapacitorSQLite);
 
@@ -199,6 +198,7 @@ export async function initDatabase(): Promise<SQLiteDBConnection> {
 
 export async function saveLocalUser(email: string, password: string) {
     const db = await initDatabase();
+    const bcrypt = await import('bcryptjs');
     const hash = await bcrypt.hash(password, 10);
     // Vérifie si l'utilisateur existe déjà
     const res = await db.query('SELECT id FROM utilisateurs WHERE email = ?', [email]);

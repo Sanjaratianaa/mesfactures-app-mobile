@@ -13,7 +13,7 @@ const nextConfig = withPWA({
 const finalConfig = {
   ...nextConfig,
   // DÉSACTIVER export pour le développement
-  // output: 'export', // ← Complètement commenté
+  output: 'export', // ← Complètement commenté
   trailingSlash: true,
   images: {
     unoptimized: true
