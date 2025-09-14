@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, Eye, EyeOff, CheckCircle } from "lucide-react"
-import { AuthService } from "@/lib/auth"
+import { AuthService } from "@/services/auth"
 
 interface ChangePasswordModalProps {
   userEmail: string
