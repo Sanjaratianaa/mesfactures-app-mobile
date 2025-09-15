@@ -8,6 +8,8 @@ import { useState, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+import { parseOCRText, saveInvoiceToAPI, ParsedInvoiceData } from '../utils/ocrParser';
+
 interface AddInvoiceModalProps {
   open: boolean
   onClose: () => void
@@ -24,23 +26,64 @@ export function AddInvoiceModal({ open, onClose, onAdd }: AddInvoiceModalProps) 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
+  const [parsedData, setParsedData] = useState<ParsedInvoiceData | null>(null);
+  const [saving, setSaving] = useState(false);
+
   // Lancer l'OCR sur le fichier image/photo
   const handleOcr = async (targetFile?: File) => {
     const fileToUse = targetFile || file;
     if (!fileToUse) return;
     setOcrLoading(true);
     setOcrText("");
+    setParsedData(null);
+    
     try {
       const { data: { text } } = await Tesseract.recognize(fileToUse, 'fra', {
         workerPath: '/tesseract-worker.js',
-        corePath: '/tesseract-core-simd-lstm.wasm.js', // <-- use local WASM loader
-        langPath: '/', // optional, if you want to serve traineddata locally
+        corePath: '/tesseract-core-simd-lstm.wasm.js',
+        langPath: '/',
       });
       setOcrText(text);
+      
+      // Parse the OCR text into structured data
+      const parsed = parseOCRText(text);
+      setParsedData(parsed);
     } catch (err) {
       setOcrText("Erreur lors de l'extraction du texte");
     }
     setOcrLoading(false);
+  };
+
+  const handleSaveInvoice = async () => {
+    if (!parsedData) return;
+    
+    setSaving(true);
+    try {
+      // Replace with actual user ID from your auth system
+      const userId = 1; // You should get this from your authentication context
+      
+      const result = await saveInvoiceToAPI(parsedData, userId);
+      console.log('Invoice saved:', result);
+      
+      // Call the onAdd callback if provided
+      if (onAdd) {
+        onAdd(result.data);
+      }
+      
+      // Close the modal
+      onClose();
+      
+      // Reset form
+      setFile(null);
+      setPhotoPreview(null);
+      setOcrText("");
+      setParsedData(null);
+      
+    } catch (error) {
+      alert('Erreur lors de l\'enregistrement de la facture');
+      console.error('Save error:', error);
+    }
+    setSaving(false);
   };
 
   // TODO: Intégrer Tesseract.js ou API OCR ici
@@ -164,12 +207,30 @@ export function AddInvoiceModal({ open, onClose, onAdd }: AddInvoiceModalProps) 
               <pre className="whitespace-pre-wrap break-words">{ocrText}</pre>
             </div>
           )}
+          {parsedData && (
+            <div className="bg-blue-50 p-3 rounded text-sm space-y-2">
+              <strong>Données extraites :</strong>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><strong>Fournisseur:</strong> {parsedData.fournisseur}</div>
+                <div><strong>Type:</strong> {parsedData.typeFacture}</div>
+                <div><strong>Montant:</strong> {parsedData.montant}€</div>
+                <div><strong>Date émission:</strong> {parsedData.dateEmission.toLocaleDateString()}</div>
+                <div><strong>Date échéance:</strong> {parsedData.dateEcheance.toLocaleDateString()}</div>
+                <div><strong>Statut:</strong> {parsedData.statut}</div>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2 pt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="button" className="flex-1 bg-primary hover:bg-primary/90" disabled={!file || loading}>
-              Enregistrer
+            <Button 
+              type="button" 
+              className="flex-1 bg-primary hover:bg-primary/90" 
+              disabled={!parsedData || saving}
+              onClick={handleSaveInvoice}
+            >
+              {saving ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </div>
         </div>
