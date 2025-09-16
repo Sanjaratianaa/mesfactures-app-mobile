@@ -11,17 +11,6 @@ export const isWeb = () => {
 };
 
 /**
- * Import conditionnel des modules SQLite selon la plateforme
- */
-export const getSQLiteModule = async () => {
-  if (isMobile()) {
-    return await import('./sqlite.mobile');
-  } else {
-    throw new Error('SQLite n\'est disponible que sur mobile');
-  }
-};
-
-/**
  * Exécute une fonction seulement sur mobile
  */
 export const onMobile = async <T>(fn: () => Promise<T>): Promise<T | null> => {
