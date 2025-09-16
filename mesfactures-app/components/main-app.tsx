@@ -328,12 +328,6 @@ export function MainApp({ user, onLogout }: MainAppProps) {
             {pendingSyncCount > 0 && ` • ${pendingSyncCount} en attente de synchronisation`}
           </div>
         )}
-        {!isOnline && !isMobile && (
-          <div className="bg-orange-500 text-white text-center py-2 text-sm">
-            <WifiOff className="w-4 h-4 inline mr-2" />
-            Connexion requise pour utiliser l'application web
-          </div>
-        )}
         {syncStatus === "syncing" && (
           <div className="bg-blue-500 text-white text-center py-2 text-sm">
             <Sync className="w-4 h-4 inline mr-2 animate-spin" />

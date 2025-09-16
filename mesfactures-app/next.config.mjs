@@ -58,7 +58,7 @@ const finalConfig = {
                   script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net;
                   worker-src 'self' blob:;
                   style-src 'self' 'unsafe-inline';
-                  connect-src 'self' data: http://localhost:* ws://localhost:* wss://localhost:*;
+                  connect-src 'self' data: http://localhost:* ws://localhost:* wss://localhost:* https://projet-transversal-api.onrender.com;
                   img-src 'self' data: blob:;
                 `.replace(/\s{2,}/g, ' ')
                 : `
@@ -66,9 +66,10 @@ const finalConfig = {
                   script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net;
                   worker-src 'self' blob:;
                   style-src 'self' 'unsafe-inline';
-                  connect-src 'self' https://cdn.jsdelivr.net;
+                  connect-src 'self' https://cdn.jsdelivr.net https://projet-transversal-api.onrender.com;
                   img-src 'self' data: blob:;
                 `.replace(/\s{2,}/g, ' '),
+
           },
         ],
       },
