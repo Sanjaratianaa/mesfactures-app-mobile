@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Wallet, Eye, EyeOff, AlertCircle } from "lucide-react"
 import { AuthService } from "@/services/auth"
 import { useOnline } from "@/hooks/use-online"
+import { saveLocalUser, checkLocalUser } from "@/lib/database"
 
 interface LoginScreenProps {
   onLogin: (userData: any) => void
@@ -97,7 +98,12 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
         
         if (result) {
           // On simule un user minimal pour le mode offline
-          onLogin({ email: email.trim(), offline: true, dateCreation: new Date().toISOString() });
+          onLogin({ 
+            email: email.trim(), 
+            offline: true, 
+            dateCreation: result.dateCreation,
+            id: result.id 
+          });
         } else {
           setErrors({ general: "Identifiants invalides (mode hors-ligne)" });
         }

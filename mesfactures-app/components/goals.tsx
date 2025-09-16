@@ -1,23 +1,26 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Target, Plus, Calendar, Lightbulb, CheckCircle } from "lucide-react"
+import { createObjectifApi, fetchObjectifsApi } from "@/services/objectifs_recommandations.api"
 
 interface GoalsProps {
+  utilisateurId: number
   goals: any[]
   onAddGoal: (goal: any) => void
   transactions: any[]
 }
 
-export function Goals({ goals, onAddGoal, transactions }: GoalsProps) {
+export function Goals({ utilisateurId, goals : initialGoals, onAddGoal, transactions }: GoalsProps) {
+  const [goals, setGoals] = useState<any[]>(Array.isArray(initialGoals) ? initialGoals : [])
   const [showAddGoal, setShowAddGoal] = useState(false)
   const [newGoal, setNewGoal] = useState({
     name: "",
@@ -26,28 +29,60 @@ export function Goals({ goals, onAddGoal, transactions }: GoalsProps) {
     category: "",
   })
 
-  const handleAddGoal = () => {
-    if (newGoal.name && newGoal.target && newGoal.deadline && newGoal.category) {
-      onAddGoal({
-        ...newGoal,
-        target: Number.parseFloat(newGoal.target),
-      })
-      setNewGoal({ name: "", target: "", deadline: "", category: "" })
-      setShowAddGoal(false)
+  useEffect(() => {
+    async function loadGoals() {
+      const response = await fetchObjectifsApi()
+      const data = Array.isArray(response.data) ? response.data : []
+      setGoals(data)
+    }
+    loadGoals()
+  }, [])
+
+  const handleAddGoal = async () => {
+  if (newGoal.name && newGoal.target && newGoal.deadline && newGoal.category) {
+    try {
+      
+      const objectifData = {
+        utilisateurId,
+        libelle: newGoal.name,
+        montantTotal: Number.parseFloat(newGoal.target),
+        montantActuel: 0,
+        dateDebut: new Date().toISOString(),
+        dateFin: newGoal.deadline,
+        statut: "En cours",
+      };
+
+      console.log("Creating goal with data:", objectifData);
+
+      const response = await createObjectifApi(objectifData);
+
+      setGoals(prev => [...prev, response.data]);
+
+      // onAddGoal attend le nouvel objectif pour mettre à jour la liste côté front
+      onAddGoal?.(response.data);
+
+      // reset du formulaire
+      setNewGoal({ name: "", target: "", deadline: "", category: "" });
+      setShowAddGoal(false);
+    } catch (error) {
+      console.error("Erreur lors de la création de l'objectif :", error);
+      alert("Impossible de créer l'objectif.");
     }
   }
+};
+
 
   const getPersonalizedTips = (goal: any) => {
     const monthsLeft = Math.ceil(
-      (new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30),
+      (new Date(goal.dateFin).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30),
     )
-    const remaining = goal.target - goal.current
+    const remaining = goal.montantTotal - goal.montantActuel
     const monthlyNeeded = remaining / monthsLeft
 
     const tips = [
-      `Économisez ${monthlyNeeded.toFixed(0)}€ par mois pour atteindre votre objectif`,
+      `Économisez ${monthlyNeeded.toFixed(0)}Ar par mois pour atteindre votre objectif`,
       `Réduisez vos dépenses en ${goal.category} de 20% ce mois`,
-      `Automatisez un virement de ${(monthlyNeeded / 4).toFixed(0)}€ par semaine`,
+      `Automatisez un virement de ${(monthlyNeeded / 4).toFixed(0)}Ar par semaine`,
     ]
 
     return tips
@@ -75,6 +110,7 @@ export function Goals({ goals, onAddGoal, transactions }: GoalsProps) {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Créer un nouvel objectif</DialogTitle>
+                <DialogDescription></DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -135,9 +171,10 @@ export function Goals({ goals, onAddGoal, transactions }: GoalsProps) {
       {/* Goals List */}
       <div className="space-y-4">
         {goals.map((goal) => {
-          const progress = (goal.current / goal.target) * 100
+          console.log("Rendering goal:", goal);
+          const progress = (goal.montantActuel / goal.montantTotal) * 100
           const isCompleted = progress >= 100
-          const daysLeft = Math.ceil((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+          const daysLeft = Math.ceil((new Date(goal.dateFin).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 
           return (
             <Card key={goal.id} className={`shadow-md ${isCompleted ? "border-green-500 bg-green-50" : ""}`}>
@@ -145,10 +182,10 @@ export function Goals({ goals, onAddGoal, transactions }: GoalsProps) {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     {isCompleted && <CheckCircle className="w-5 h-5 text-green-600" />}
-                    {goal.name}
+                    {goal.libelle}
                   </CardTitle>
                   <Badge variant={isCompleted ? "default" : "secondary"} className={isCompleted ? "bg-green-600" : ""}>
-                    {goal.category}
+                    {goal.statut}
                   </Badge>
                 </div>
               </CardHeader>
@@ -157,7 +194,7 @@ export function Goals({ goals, onAddGoal, transactions }: GoalsProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Progression</span>
                     <span className="font-medium">
-                      {goal.current.toFixed(0)}€ / {goal.target.toFixed(0)}€
+                      {Number(goal.montantActuel ?? 0).toFixed(0)}Ar / {Number(goal.montantTotal ?? 0).toFixed(0)}Ar
                     </span>
                   </div>
                   <Progress value={Math.min(progress, 100)} className="h-3" />

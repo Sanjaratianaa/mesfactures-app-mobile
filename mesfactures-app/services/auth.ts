@@ -59,7 +59,6 @@ export class AuthService {
   static async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
-      
       if (response.token && response.user) {
         // Store token and user data
         apiClient.setStoredToken(response.token)

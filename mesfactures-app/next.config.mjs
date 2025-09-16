@@ -3,8 +3,7 @@ import withPWA from 'next-pwa'
 
 const nextConfig = withPWA({
   dest: 'public',
-  // ACTIVER PWA même en développement
-  disable: false, // ← Changé !
+  disable: false,
   register: true,
   skipWaiting: true,
   runtimeCaching: [],
@@ -12,14 +11,39 @@ const nextConfig = withPWA({
 
 const finalConfig = {
   ...nextConfig,
-  // DÉSACTIVER export pour le développement
-  output: 'export', // ← Complètement commenté
+  output: 'export',
   trailingSlash: true,
   images: {
-    unoptimized: true
+    unoptimized: true,
   },
   
-  // Configuration CSP permissive pour dev
+  // Remove the webpack configuration and replace with this:
+  webpack: (config, { isServer }) => {
+    // Enable WebAssembly support
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      syncWebAssembly: true, // Add this line
+      layers: true, // Add this line
+    }
+    
+    // Add rule for wasm files
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    })
+    
+    // Add this to handle the jeep-sqlite package
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      crypto: false,
+      path: false,
+    }
+    
+    return config
+  },
+
   async headers() {
     return [
       {
@@ -27,19 +51,47 @@ const finalConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: process.env.NODE_ENV === 'development' 
-              ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:*; img-src 'self' data: blob:;"
-              : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+            value:
+              process.env.NODE_ENV === 'development'
+                ? `
+                  default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;
+                  script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net;
+                  worker-src 'self' blob:;
+                  style-src 'self' 'unsafe-inline';
+                  connect-src 'self' data: http://localhost:* ws://localhost:* wss://localhost:*;
+                  img-src 'self' data: blob:;
+                `.replace(/\s{2,}/g, ' ')
+                : `
+                  default-src 'self';
+                  script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net;
+                  worker-src 'self' blob:;
+                  style-src 'self' 'unsafe-inline';
+                  connect-src 'self' https://cdn.jsdelivr.net;
+                  img-src 'self' data: blob:;
+                `.replace(/\s{2,}/g, ' '),
+          },
+        ],
+      },
+      // Add specific headers for WASM files
+      {
+        source: '/assets/:path*',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/wasm',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
     ]
   },
 
-  // GARDER les console.log en développement
   compiler: {
-    removeConsole: false // ← Complètement désactivé en dev
-  }
+    removeConsole: false,
+  },
 }
 
 export default finalConfig

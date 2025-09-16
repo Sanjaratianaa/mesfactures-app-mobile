@@ -16,12 +16,15 @@ import {
   Trash2,
   RefreshCw,
   Calendar,
+  AlertCircle,
+  WifiOff,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { offlineDataService } from "@/services/offline-data"
+import { useOnline } from "@/hooks/use-online"
 
 interface TransactionsProps {
-  transactions: any[]
-  setTransactions: (transactions: any[]) => void
+  user: any
 }
 
 const categoryColors: Record<string, string> = {
@@ -31,15 +34,61 @@ const categoryColors: Record<string, string> = {
   Revenus: "bg-green-100 text-green-800",
   Santé: "bg-red-100 text-red-800",
   Shopping: "bg-pink-100 text-pink-800",
+  Logement: "bg-yellow-100 text-yellow-800",
+  Autres: "bg-gray-100 text-gray-800",
 }
 
-export function Transactions({ transactions, setTransactions }: TransactionsProps) {
+export function Transactions({ user }: TransactionsProps) {
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedType, setSelectedType] = useState("all")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [categories, setCategories] = useState<string[]>([])
+  const isOnline = useOnline()
+
+  // Load transactions from offline database
+  useEffect(() => {
+    loadTransactions()
+    loadCategories()
+  }, [user?.id])
+
+  const loadTransactions = async () => {
+    if (!user?.id) return
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Load transactions from offline service
+      const userTransactions = await offlineDataService.getTransactions(user.id, 200, 0)
+      setTransactions(userTransactions)
+
+      console.log(`✅ Loaded ${userTransactions.length} transactions from database`)
+    } catch (err) {
+      console.error('❌ Error loading transactions:', err)
+      setError('Erreur lors du chargement des transactions')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCategories = async () => {
+    try {
+      const allCategories = await offlineDataService.getCategories()
+      const categoryNames = Array.from(new Set([
+        ...allCategories.map(cat => cat.nom),
+        ...transactions.map(t => t.category)
+      ]))
+      setCategories(categoryNames)
+    } catch (err) {
+      console.error('❌ Error loading categories:', err)
+    }
+  }
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch =
@@ -68,14 +117,42 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
   })
 
   const handleRefresh = async () => {
+    if (!user?.id) return
+
     setIsRefreshing(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsRefreshing(false)
+    
+    try {
+      // Reload data from database
+      await loadTransactions()
+      await loadCategories()
+      
+      console.log('✅ Transactions refreshed')
+    } catch (error) {
+      console.error('❌ Error refreshing transactions:', error)
+      setError('Erreur lors de l\'actualisation')
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
-  const deleteTransaction = (id: number) => {
-    setTransactions(transactions.filter((t) => t.id !== id))
+  const deleteTransaction = async (id: number, type: 'income' | 'expense') => {
+    if (!user?.id) return
+
+    try {
+      // Delete from offline database
+      await offlineDataService.deleteTransaction(user.id, id, type)
+      
+      // Remove from local state immediately for better UX
+      setTransactions(prev => prev.filter(t => t.id !== id))
+      
+      console.log(`✅ Transaction ${id} deleted`)
+    } catch (error) {
+      console.error('❌ Error deleting transaction:', error)
+      setError('Erreur lors de la suppression')
+      
+      // Reload transactions to restore state if deletion failed
+      await loadTransactions()
+    }
   }
 
   const clearFilters = () => {
@@ -86,38 +163,81 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
     setEndDate("")
   }
 
-  const exportToPDF = () => {
-    console.log("Exporting to PDF...")
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      "Date,Titre,Catégorie,Montant,Type\n" +
-      filteredTransactions.map((t) => `${t.date},${t.title},${t.category},${t.amount},${t.type}`).join("\n")
+  const exportToCSV = () => {
+    try {
+      const csvContent =
+        "Date,Titre,Catégorie,Montant,Type\n" +
+        filteredTransactions.map((t) => 
+          `${t.date},"${t.title}","${t.category}",${t.amount},${t.type}`
+        ).join("\n")
 
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", "transactions.csv")
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      
+      link.setAttribute("href", url)
+      link.setAttribute("download", `transactions-${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      console.log('✅ Transactions exported to CSV')
+    } catch (error) {
+      console.error('❌ Error exporting transactions:', error)
+      setError('Erreur lors de l\'export')
+    }
   }
 
-  const exportToExcel = () => {
-    exportToPDF() // For demo, same as PDF
+  const exportUserData = async () => {
+    if (!user?.id) return
+
+    try {
+      // Export all user data from offline service
+      const userData = await offlineDataService.exportUserData(user.id)
+      
+      const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      
+      link.setAttribute("href", url)
+      link.setAttribute("download", `mesfactures-backup-${new Date().toISOString().split('T')[0]}.json`)
+      link.style.visibility = 'hidden'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      console.log('✅ User data exported')
+    } catch (error) {
+      console.error('❌ Error exporting user data:', error)
+      setError('Erreur lors de l\'export complet')
+    }
   }
 
   const getSuggestedCategory = (title: string): string => {
     const suggestions: Record<string, string> = {
       supermarché: "Alimentation",
       restaurant: "Alimentation",
+      mcdo: "Alimentation",
+      carrefour: "Alimentation",
       essence: "Transport",
       uber: "Transport",
+      bus: "Transport",
+      métro: "Transport",
       cinéma: "Loisirs",
       netflix: "Loisirs",
+      spotify: "Loisirs",
       pharmacie: "Santé",
       médecin: "Santé",
+      dentiste: "Santé",
       amazon: "Shopping",
       zara: "Shopping",
+      fnac: "Shopping",
+      loyer: "Logement",
+      électricité: "Logement",
+      internet: "Logement",
     }
 
     const titleLower = title.toLowerCase()
@@ -126,10 +246,27 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
         return category
       }
     }
-    return "Autre"
+    return "Autres"
   }
 
-  const categories = Array.from(new Set(transactions.map((t) => t.category)))
+  if (loading) {
+    return (
+      <div className="p-4 space-y-6">
+        <div className="pt-4">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <CreditCard className="w-6 h-6 text-primary" />
+            Transactions
+          </h1>
+        </div>
+        <Card className="shadow-md">
+          <CardContent className="p-8 text-center">
+            <RefreshCw className="w-8 h-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Chargement des transactions...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 space-y-6">
@@ -140,8 +277,12 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <CreditCard className="w-6 h-6 text-primary" />
               Transactions
+              {!isOnline && <WifiOff className="w-5 h-5 text-red-500 ml-2" />}
             </h1>
-            <p className="text-muted-foreground">Historique de vos opérations</p>
+            <p className="text-muted-foreground">
+              Historique de vos opérations
+              {!isOnline && <span className="text-red-600 ml-2">(Mode hors ligne)</span>}
+            </p>
           </div>
           {/* Refresh Button */}
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
@@ -149,6 +290,26 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
           </Button>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertCircle className="w-4 h-4" />
+              <span>{error}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setError(null)}
+                className="ml-auto text-red-700 hover:text-red-900"
+              >
+                ✕
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-md">
         <CardContent className="p-4 space-y-4">
@@ -222,20 +383,20 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
 
             {/* Export Buttons */}
             <div className="flex gap-2 ml-auto">
-              <Button variant="outline" size="sm" onClick={exportToPDF}>
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
                 <FileText className="w-4 h-4 mr-2" />
                 CSV
               </Button>
-              <Button variant="outline" size="sm" onClick={exportToExcel}>
+              <Button variant="outline" size="sm" onClick={exportUserData}>
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                Export complet
               </Button>
             </div>
           </div>
 
           {/* Results count */}
           <p className="text-sm text-muted-foreground">
-            {filteredTransactions.length} transaction(s) trouvée(s)
+            {filteredTransactions.length} transaction(s) trouvée(s) sur {transactions.length} au total
             {(startDate || endDate) && (
               <span className="ml-2 text-primary">
                 {startDate && endDate
@@ -253,7 +414,7 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
       <div className="space-y-3">
         {filteredTransactions.map((transaction) => {
           const suggestedCategory = getSuggestedCategory(transaction.title)
-          const showSuggestion = suggestedCategory !== "Autre" && suggestedCategory !== transaction.category
+          const showSuggestion = suggestedCategory !== "Autres" && suggestedCategory !== transaction.category
 
           return (
             <Card key={transaction.id} className="shadow-md hover:shadow-lg transition-all duration-200 group">
@@ -276,7 +437,7 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
                       <div className="flex items-center gap-2 mt-1">
                         <Badge
                           variant="secondary"
-                          className={categoryColors[transaction.category] || "bg-gray-100 text-gray-800"}
+                          className={categoryColors[transaction.category] || categoryColors.Autres}
                         >
                           {transaction.category}
                         </Badge>
@@ -285,7 +446,9 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
                             Suggéré: {suggestedCategory}
                           </Badge>
                         )}
-                        <span className="text-xs text-muted-foreground">{transaction.date}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(transaction.date).toLocaleDateString('fr-FR')}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -301,7 +464,8 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
                       variant="ghost"
                       size="sm"
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => deleteTransaction(transaction.id)}
+                      onClick={() => deleteTransaction(transaction.id, transaction.type)}
+                      title="Supprimer la transaction"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -313,20 +477,27 @@ export function Transactions({ transactions, setTransactions }: TransactionsProp
         })}
       </div>
 
-      {filteredTransactions.length === 0 && (searchTerm || startDate || endDate) && (
+      {/* Empty States */}
+      {filteredTransactions.length === 0 && transactions.length > 0 && (
         <Card className="shadow-md">
           <CardContent className="p-8 text-center">
             <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Aucune transaction trouvée avec les filtres appliqués</p>
+            <Button variant="outline" onClick={clearFilters} className="mt-4">
+              Effacer les filtres
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {transactions.length === 0 && (
+      {transactions.length === 0 && !loading && (
         <Card className="shadow-md">
           <CardContent className="p-8 text-center">
             <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Aucune transaction pour le moment</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Utilisez le bouton "+" pour ajouter votre première transaction
+            </p>
           </CardContent>
         </Card>
       )}

@@ -9,10 +9,13 @@ import { Loans } from "@/components/loans"
 import { Goals } from "@/components/goals"
 import { Gamification } from "@/components/gamification"
 import { AddExpenseModal } from "@/components/add-expense-modal"
+import { AddInvoiceModal } from "@/components/add-invoice-modal"
 import { NetworkStatusToast } from "@/components/network-status-toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useOnline } from "@/hooks/use-online"
+import { offlineDataService } from "@/services/offline-data"
+import { Transaction, Goal, Loan, UserStats } from "@/services/offline-data"
 import {
   Home,
   CreditCard,
@@ -27,7 +30,20 @@ import {
   X,
   TrendingDown,
   TrendingUp,
+  AlertCircle,
+  RefreshCw as Sync,
+  FileText
 } from "lucide-react"
+
+// Extended types for UI-specific fields
+interface GoalWithColor extends Goal {
+  color: string
+}
+
+interface LoanWithExtras extends Loan {
+  remainingAmount: number
+  nextPaymentDate: string
+}
 
 interface MainAppProps {
   user: any
@@ -38,13 +54,18 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [showFabOptions, setShowFabOptions] = useState(false)
-  const isOnline = useOnline() // Utilisation du hook pour la détection dynamique
+  const [showAddInvoice, setShowAddInvoice] = useState(false)
+  const isOnline = useOnline()
   const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "offline">("synced")
+  const [dataServiceReady, setDataServiceReady] = useState(false)
+  const [serviceError, setServiceError] = useState<string | null>(null)
+  const [pendingSyncCount, setPendingSyncCount] = useState(0)
 
-  // Détection de la plateforme
-  const isMobile = typeof window !== 'undefined' && (window as any).Capacitor;
-
-  const [userStats, setUserStats] = useState({
+  // Data
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [goals, setGoals] = useState<GoalWithColor[]>([])
+  const [loans, setLoans] = useState<LoanWithExtras[]>([])
+  const [userStats, setUserStats] = useState<UserStats>({
     level: 3,
     xp: 750,
     xpToNext: 1000,
@@ -56,162 +77,194 @@ export function MainApp({ user, onLogout }: MainAppProps) {
       target: 200,
       reward: 100,
     },
+    transactionCount: 0,
+    totalExpenses: 0,
+    totalRevenues: 0,
+    balance: 0,
   })
 
-  const [goals, setGoals] = useState([
-    {
-      id: 1,
-      name: "Vacances d'été",
-      target: 2000,
-      current: 1200,
-      deadline: "2024-06-01",
-      category: "Loisirs",
-      color: "#3b82f6",
-    },
-    {
-      id: 2,
-      name: "Fonds d'urgence",
-      target: 5000,
-      current: 3200,
-      deadline: "2024-12-31",
-      category: "Épargne",
-      color: "#10b981",
-    },
-  ])
-
-  const [loans, setLoans] = useState([
-    {
-      id: 1,
-      name: "Prêt immobilier",
-      amount: 150000,
-      rate: 1.5,
-      duration: 240,
-      startDate: "2023-01-01",
-      monthlyPayment: 717.42,
-      remainingAmount: 145000,
-      nextPaymentDate: "2024-02-01",
-    },
-    {
-      id: 2,
-      name: "Prêt auto",
-      amount: 25000,
-      rate: 3.2,
-      duration: 60,
-      startDate: "2023-06-01",
-      monthlyPayment: 451.58,
-      remainingAmount: 18500,
-      nextPaymentDate: "2024-02-15",
-    },
-  ])
-
-  const [transactions, setTransactions] = useState([
-    { id: 1, title: "Courses Carrefour", amount: -45.5, category: "Alimentation", date: "2024-01-15", type: "expense" },
-    { id: 2, title: "Salaire", amount: 2500, category: "Revenus", date: "2024-01-01", type: "income" },
-    { id: 3, title: "Essence", amount: -65.2, category: "Transport", date: "2024-01-14", type: "expense" },
-    { id: 4, title: "Restaurant", amount: -32.8, category: "Loisirs", date: "2024-01-13", type: "expense" },
-  ])
-
+  // Initialize offline data service
   useEffect(() => {
-    // Initialiser la base SQLite seulement sur mobile
-    const initializeMobileDatabase = async () => {
-      if (isMobile) {
-        try {
-          const { initDatabase } = await import('@/lib/sqlite.mobile');
-          await initDatabase();
-          console.log("📦 Base SQLite initialisée (mobile)");
-        } catch (err) {
-          console.error("Erreur SQLite:", err);
-        }
-      } else {
-        console.log("🌐 Mode web - pas d'initialisation SQLite locale");
+    const initializeService = async () => {
+      try {
+        await offlineDataService.initialize()
+        setDataServiceReady(true)
+        setServiceError(null)
+        await loadUserData()
+      } catch (error: any) {
+        setServiceError(`Service initialization failed: ${error.message || error}`)
+        setDataServiceReady(false)
       }
-    };
+    }
+    initializeService()
+  }, [user])
 
-    initializeMobileDatabase();
+  const loadUserData = async () => {
+    if (!dataServiceReady || !user?.id) return;
 
-    const handleOnline = () => {
+    try {
+      // Transactions
+      const rawTransactions = await offlineDataService.getTransactions(user.id, 50, 0);
+      const normalizedTransactions: Transaction[] = rawTransactions.map(t => ({
+        ...t,
+        type: t.type === 'income' ? 'revenu' : 'depense',
+      }));
+      setTransactions(normalizedTransactions);
+
+      // Goals
+      const rawGoals = await offlineDataService.getGoals(user.id);
+      const colorPalette = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+      setGoals(
+        rawGoals.map(g => ({
+          ...g,
+          color: colorPalette[(g.id ?? 0) % colorPalette.length],
+        }))
+      );
+
+      // Loans
+      const rawLoans = await offlineDataService.getLoans(user.id);
+      setLoans(
+        rawLoans.map(l => ({
+          ...l,
+          remainingAmount: l.montant,
+          nextPaymentDate: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]
+        }))
+      );
+
+      // Stats
+      const stats = await offlineDataService.getUserStats(user.id);
+      setUserStats(prev => ({ ...prev, ...stats }));
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    }
+  };
+
+
+  // Network & Sync
+  useEffect(() => {
+    const handleOnline = async () => {
       setSyncStatus("syncing")
-      console.log('📶 Connexion rétablie, synchronisation en cours...')
-      // Simuler la synchronisation
-      setTimeout(() => setSyncStatus("synced"), 2000)
+      try {
+        const pendingCount = offlineDataService.getSyncQueueSize()
+        setPendingSyncCount(pendingCount)
+        if (pendingCount > 0) await offlineDataService.processSyncQueue()
+        setPendingSyncCount(0)
+        setSyncStatus("synced")
+        await loadUserData()
+      } catch {
+        setSyncStatus("offline")
+      }
     }
 
     const handleOffline = () => {
       setSyncStatus("offline")
-      console.log('📱 Mode hors ligne activé')
+      setPendingSyncCount(offlineDataService.getSyncQueueSize())
     }
 
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
+    isOnline ? handleOnline() : handleOffline()
 
     return () => {
       window.removeEventListener("online", handleOnline)
       window.removeEventListener("offline", handleOffline)
     }
-  }, [isMobile])
+  }, [dataServiceReady])
 
-  const addTransaction = (transaction: any) => {
-    const newTransaction = {
-      id: Date.now(),
-      ...transaction,
-      date: new Date().toISOString().split("T")[0],
+  // Add functions
+  const addTransaction = async (transaction: Transaction) => {
+    if (!dataServiceReady || !user?.id) return;
+
+    try {
+      await offlineDataService.addTransaction(user.id, {
+        title: transaction.title,
+        amount: transaction.amount,
+        category: transaction.category,
+        type: transaction.type === 'depense' ? 'expense' : 'income',
+        date: transaction.date
+      });
+
+      await loadUserData();
+    } catch (error) {
+      console.error(error);
     }
-    setTransactions((prev) => [newTransaction, ...prev])
+  };
 
-    setUserStats((prev) => ({
-      ...prev,
-      xp: prev.xp + 10,
-      streak: prev.streak + (Math.random() > 0.7 ? 1 : 0),
-    }))
-  }
+  const addLoan = async (loan: Loan) => {
+    if (!dataServiceReady || !user?.id) return;
 
-  const addLoan = (loan: any) => {
-    const newLoan = {
-      id: Date.now(),
-      ...loan,
-      startDate: new Date().toISOString().split("T")[0],
-      remainingAmount: loan.amount,
-      nextPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    try {
+      await offlineDataService.addLoan(user.id, {
+        name: loan.description,
+        amount: loan.montant,
+        rate: loan.taux,
+        duration: loan.duree,
+        monthlyPayment: loan.mensualite
+      });
+
+      await loadUserData();
+    } catch (error) {
+      console.error(error);
     }
-    setLoans((prev) => [...prev, newLoan])
-  }
+  };
 
-  const addGoal = (goal: any) => {
-    const newGoal = {
-      id: Date.now(),
-      ...goal,
-      current: 0,
-      color: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"][Math.floor(Math.random() * 5)],
+  const addGoal = async (goal: GoalWithColor) => {
+    if (!dataServiceReady || !user?.id) return;
+
+    try {
+      await offlineDataService.addGoal(user.id, {
+        name: goal.nom,
+        target: goal.montant_cible,
+        deadline: goal.date_limite,
+        category: goal.description
+      });
+
+      await loadUserData();
+    } catch (error) {
+      console.error(error);
     }
-    setGoals((prev) => [...prev, newGoal])
-  }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard user={user} transactions={transactions} userStats={userStats} goals={goals} />
+        return <Dashboard user={user} transactions={transactions} goals={goals} userStats={userStats} />
       case "transactions":
-        return <Transactions transactions={transactions} setTransactions={setTransactions} />
+        return <Transactions user={user} />
       case "budgets":
         return <Budgets transactions={transactions} />
       case "loans":
-        return <Loans loans={loans} onAddLoan={addLoan} />
+        return <Loans
+          loans={loans.map(l => ({
+            id: l.id ?? 0,
+            name: l.description,        // correspond à 'name' attendu
+            amount: l.montant,
+            rate: l.taux,
+            duration: l.duree,
+            startDate: l.date_debut,
+            monthlyPayment: l.mensualite,
+            remainingAmount: l.remainingAmount,
+            nextPaymentDate: l.nextPaymentDate,
+          }))}
+          onAddLoan={addLoan}
+        />
       case "goals":
-        return <Goals goals={goals} onAddGoal={addGoal} transactions={transactions} />
+        return <Goals utilisateurId={user.id} goals={goals} onAddGoal={addGoal} transactions={transactions} />
       case "gamification":
         return <Gamification userStats={userStats} setUserStats={setUserStats} />
       case "profile":
         return <Profile user={user} onLogout={onLogout} />
       default:
-        return <Dashboard user={user} transactions={transactions} userStats={userStats} goals={goals} />
+        return <Dashboard user={user} transactions={transactions} goals={goals} userStats={userStats} />
     }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Toast de statut réseau */}
+      {/* Network Status Toast */}
       <NetworkStatusToast />
       
+      {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-30 bg-card border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
@@ -223,10 +276,16 @@ export function MainApp({ user, onLogout }: MainAppProps) {
               <span className={`text-xs ${isOnline ? "text-green-600" : "text-red-600"}`}>
                 {isOnline ? "En ligne" : "Hors ligne"}
               </span>
-              {process.env.NODE_ENV === 'development' && (
-                <span className="text-xs text-gray-400 ml-2">
-                  ({isMobile ? 'Mobile' : 'Web'})
+              {!dataServiceReady && !isOnline && (
+                <span title="Service de données non disponible">
+                  <AlertCircle className="w-4 h-4 text-yellow-500 ml-1" />
                 </span>
+              )}
+              {pendingSyncCount > 0 && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  <Sync className="w-3 h-3 mr-1" />
+                  {pendingSyncCount}
+                </Badge>
               )}
             </div>
           </div>
@@ -261,10 +320,12 @@ export function MainApp({ user, onLogout }: MainAppProps) {
           </div>
         </div>
 
-        {!isOnline && isMobile && (
+        {/* Status Banners */}
+        {!isOnline && (
           <div className="bg-red-500 text-white text-center py-2 text-sm">
             <WifiOff className="w-4 h-4 inline mr-2" />
-            Mode hors ligne - Les données seront synchronisées à la reconnexion
+            Mode hors ligne - {dataServiceReady ? "Données sauvegardées localement" : "Fonctionnalités limitées"}
+            {pendingSyncCount > 0 && ` • ${pendingSyncCount} en attente de synchronisation`}
           </div>
         )}
         {!isOnline && !isMobile && (
@@ -275,22 +336,31 @@ export function MainApp({ user, onLogout }: MainAppProps) {
         )}
         {syncStatus === "syncing" && (
           <div className="bg-blue-500 text-white text-center py-2 text-sm">
-            <Wifi className="w-4 h-4 inline mr-2 animate-pulse" />
+            <Sync className="w-4 h-4 inline mr-2 animate-spin" />
             Synchronisation en cours...
+          </div>
+        )}
+        {serviceError && (
+          <div className="bg-yellow-500 text-white text-center py-2 text-sm">
+            <AlertCircle className="w-4 h-4 inline mr-2" />
+            Avertissement: {serviceError}
           </div>
         )}
       </div>
 
       {/* Main Content */}
-      <div className={`pt-16 pb-20 ${!isOnline || syncStatus === "syncing" ? "pt-24" : ""}`}>{renderContent()}</div>
+      <div className={`pt-16 pb-20 ${(!isOnline || syncStatus === "syncing" || serviceError) ? "pt-24" : ""}`}>
+        {renderContent()}
+      </div>
 
+      {/* Floating Action Button */}
       <div className="fixed bottom-20 right-4 z-20">
         {showFabOptions && (
           <div className="flex flex-col gap-3 mb-3">
             <Button
               className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
               onClick={() => {
-                setShowFabOptions(false)
+                setShowFabOptions(false);
               }}
             >
               <X className="w-5 h-5 text-white" />
@@ -298,9 +368,11 @@ export function MainApp({ user, onLogout }: MainAppProps) {
             <Button
               className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
               onClick={() => {
-                setShowAddExpense(true)
-                setShowFabOptions(false)
+                setShowAddExpense(true);
+                setShowFabOptions(false);
               }}
+              disabled={!dataServiceReady}
+              title={!dataServiceReady ? "Service de données non disponible" : "Ajouter une dépense"}
             >
               <TrendingDown className="w-5 h-5 text-white" />
             </Button>
@@ -308,10 +380,23 @@ export function MainApp({ user, onLogout }: MainAppProps) {
               className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
               onClick={() => {
                 // TODO: Open add income modal
-                setShowFabOptions(false)
+                setShowFabOptions(false);
               }}
+              disabled={!dataServiceReady}
+              title={!dataServiceReady ? "Service de données non disponible" : "Ajouter un revenu"}
             >
               <TrendingUp className="w-5 h-5 text-white" />
+            </Button>
+            <Button
+              className="w-12 h-12 rounded-full bg-green-700 hover:bg-green-800 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+              onClick={() => {
+                setShowAddInvoice(true);
+                setShowFabOptions(false);
+              }}
+              disabled={!isOnline}
+              title={!isOnline ? "Fonctionnalité disponible uniquement en ligne" : "Ajouter une facture (OCR)"}
+            >
+              <FileText className="w-5 h-5 text-white" />
             </Button>
           </div>
         )}
@@ -349,8 +434,16 @@ export function MainApp({ user, onLogout }: MainAppProps) {
         </div>
       </div>
 
-      {/* Add Expense Modal */}
-      <AddExpenseModal open={showAddExpense} onClose={() => setShowAddExpense(false)} onAdd={addTransaction} />
+      {/* Modals */}
+      <AddExpenseModal 
+        open={showAddExpense} 
+        onClose={() => setShowAddExpense(false)} 
+        onAdd={addTransaction} 
+      />
+      <AddInvoiceModal 
+        open={showAddInvoice} 
+        onClose={() => setShowAddInvoice(false)} 
+      />
     </div>
   )
 }

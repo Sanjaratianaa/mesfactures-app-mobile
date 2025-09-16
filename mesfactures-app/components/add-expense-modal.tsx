@@ -2,13 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState, useEffect } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Minus, Plus } from "lucide-react"
+import { fetchCategories } from "@/services/api"
 
 interface AddExpenseModalProps {
   open: boolean
@@ -24,7 +25,35 @@ export function AddExpenseModal({ open, onClose, onAdd }: AddExpenseModalProps) 
     type: "expense",
   })
 
-  const categories = ["Alimentation", "Transport", "Loisirs", "Shopping", "Santé", "Revenus"]
+  type Category = { id: number; libelle: string; type: string }
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+  const [catError, setCatError] = useState<string | null>(null)
+
+  // Map type to API param
+  const getApiType = (type: string) => {
+    if (type === "expense") return "depense"
+    if (type === "income") return "revenu"
+    return undefined
+  }
+
+  useEffect(() => {
+    setLoadingCategories(true)
+    setCatError(null)
+    fetchCategories(getApiType(formData.type) as 'depense' | 'revenu')
+      .then((cats) => {
+        // Always map to Category[]
+        setCategories((cats || []).map((c: any, idx: number) => {
+          if (c && typeof c === 'object' && 'id' in c && 'libelle' in c && 'type' in c) {
+            return { id: c.id, libelle: c.libelle, type: c.type }
+          } else {
+            return { id: idx, libelle: String(c), type: formData.type }
+          }
+        }))
+      })
+      .catch((err) => setCatError(err.message || "Erreur lors du chargement des catégories"))
+      .finally(() => setLoadingCategories(false))
+  }, [formData.type])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,10 +67,14 @@ export function AddExpenseModal({ open, onClose, onAdd }: AddExpenseModalProps) 
         ? -Math.abs(Number.parseFloat(formData.amount))
         : Math.abs(Number.parseFloat(formData.amount))
 
+    // Find selected category object
+    const selectedCategory = categories.find((cat) => String(cat.id) === formData.category)
+
     onAdd({
       title: formData.title,
       amount,
-      category: formData.category,
+      categoryId: formData.category,
+      categoryLabel: selectedCategory?.libelle || '',
       type: formData.type,
     })
 
@@ -65,6 +98,7 @@ export function AddExpenseModal({ open, onClose, onAdd }: AddExpenseModalProps) 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Ajouter une transaction</DialogTitle>
+          <DialogDescription></DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Transaction Type */}
@@ -118,14 +152,18 @@ export function AddExpenseModal({ open, onClose, onAdd }: AddExpenseModalProps) 
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="category">Catégorie</Label>
-            <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => handleInputChange("category", value)}
+              disabled={loadingCategories || !!catError}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une catégorie" />
+                <SelectValue placeholder={loadingCategories ? "Chargement..." : catError ? catError : "Sélectionner une catégorie"} />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category.id} value={String(category.id)}>
+                    {category.libelle}
                   </SelectItem>
                 ))}
               </SelectContent>

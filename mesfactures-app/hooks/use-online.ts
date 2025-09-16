@@ -31,20 +31,6 @@ export function useOnline() {
         console.log('🌐 [DEV] navigator.onLine:', navigator.onLine)
         return
       }
-
-      // En production : faire une vraie requête réseau
-      try {
-        const response = await fetch('https://www.google.com/favicon.ico', {
-          method: 'HEAD',
-          mode: 'no-cors',
-          cache: 'no-cache'
-        })
-        setIsOnline(true)
-        console.log('🌐 [PROD] Network check: ONLINE')
-      } catch (error) {
-        setIsOnline(false)
-        console.log('🌐 [PROD] Network check: OFFLINE')
-      }
     }
 
     // Fonction pour mettre à jour le statut de connexion

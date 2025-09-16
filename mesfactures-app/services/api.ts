@@ -1,5 +1,6 @@
-// const API_BASE_URL = 'http://localhost:5000/api'
-const API_BASE_URL = 'https://projet-transversal-api.onrender.com/api'
+// API configuration and common utilities
+const API_BASE_URL = 'http://localhost:5000/api'
+// const API_BASE_URL = 'https://projet-transversal-api.onrender.com/api'
 
 export interface ApiResponse<T> {
   data?: T
@@ -29,7 +30,6 @@ class ApiClient {
     
     // Vérifier la connexion réseau
     if (!navigator.onLine) {
-      console.log('🔌 Offline: Request queued for later sync')
       throw new Error('Pas de connexion Internet. L\'action sera synchronisée lors de la reconnexion.')
     }
     
@@ -50,11 +50,11 @@ class ApiClient {
     try {
       const response = await fetch(url, config)
       
-      console.log('📡 API response status:', response.status)
+  // console.log('📡 API response status:', response.status)
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.log('❌ API error response:', errorData)
+  // console.log('❌ API error response:', errorData)
         throw {
           message: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
           status: response.status,
@@ -127,6 +127,17 @@ class ApiClient {
 
 // Create and export the API client instance
 export const apiClient = new ApiClient(API_BASE_URL)
+
+// Fonctions utilitaires pour les catégories
+export async function fetchCategories(type?: 'depense' | 'revenu'): Promise<string[]> {
+  let endpoint = '/categorie/categories';
+  if (type === 'depense') endpoint = '/categorie/categories/depense';
+  if (type === 'revenu') endpoint = '/categorie/categories/revenu';
+  const res = await apiClient.get<string[]>(endpoint);
+  // console.log('Fetched categories:', res.data);
+  if (!res.data) throw new Error(res.message || 'Erreur lors de la récupération des catégories');
+  return res.data;
+}
 
 // Export base URL for other configurations
 export { API_BASE_URL }
