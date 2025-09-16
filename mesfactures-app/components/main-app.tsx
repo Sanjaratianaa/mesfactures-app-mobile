@@ -249,7 +249,7 @@ export function MainApp({ user, onLogout }: MainAppProps) {
           onAddLoan={addLoan}
         />
       case "goals":
-        return <Goals goals={goals} onAddGoal={addGoal} transactions={transactions} />
+        return <Goals utilisateurId={user.id} goals={goals} onAddGoal={addGoal} transactions={transactions} />
       case "gamification":
         return <Gamification userStats={userStats} setUserStats={setUserStats} />
       case "profile":

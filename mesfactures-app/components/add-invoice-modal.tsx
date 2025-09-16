@@ -8,7 +8,8 @@ import { useState, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { parseOCRText, saveInvoiceToAPI, ParsedInvoiceData } from '../utils/ocrParser';
+import { parseOCRText, ParsedInvoiceData } from '../utils/ocrParser';
+import { saveInvoiceOCR, saveInvoiceWithFile } from "@/services/factures.api";
 
 interface AddInvoiceModalProps {
   open: boolean
@@ -56,29 +57,25 @@ export function AddInvoiceModal({ open, onClose, onAdd }: AddInvoiceModalProps) 
 
   const handleSaveInvoice = async () => {
     if (!parsedData) return;
-    
     setSaving(true);
+
     try {
-      // Replace with actual user ID from your auth system
-      const userId = 1; // You should get this from your authentication context
-      
-      const result = await saveInvoiceToAPI(parsedData, userId);
-      console.log('Invoice saved:', result);
-      
-      // Call the onAdd callback if provided
-      if (onAdd) {
-        onAdd(result.data);
+      const userId = 1;
+
+      const invoiceResult = await saveInvoiceOCR(parsedData, userId);
+      const factureId = invoiceResult.data?.id; 
+    if (!factureId) throw new Error("Impossible de récupérer l'ID de la facture");
+
+      if (file) {
+        await saveInvoiceWithFile(file, factureId);
       }
-      
-      // Close the modal
-      onClose();
       
       // Reset form
       setFile(null);
       setPhotoPreview(null);
       setOcrText("");
       setParsedData(null);
-      
+      onClose();
     } catch (error) {
       alert('Erreur lors de l\'enregistrement de la facture');
       console.error('Save error:', error);
