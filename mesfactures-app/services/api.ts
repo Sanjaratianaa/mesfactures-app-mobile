@@ -27,15 +27,15 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
-    
+
     // Vérifier la connexion réseau
     if (!navigator.onLine) {
       throw new Error('Pas de connexion Internet. L\'action sera synchronisée lors de la reconnexion.')
     }
-    
+
     // Get token from localStorage if available
     const token = this.getStoredToken()
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -49,15 +49,23 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config)
-      
-  // console.log('📡 API response status:', response.status)
-      
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-  // console.log('❌ API error response:', errorData)
+        const text = await response.text()
+        console.log('❌ API error response:', response.status, text)
+
+        // Tenter de parser le JSON, sinon fallback à {}
+        let errorData: { message?: string } = {}
+        try {
+          errorData = JSON.parse(text)
+        } catch {
+          // si ce n'est pas du JSON, rester {}
+        }
+
         throw {
           message: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
           status: response.status,
+          raw: text, // pour voir la réponse complète dans les logs
         } as ApiError
       }
 
@@ -73,6 +81,7 @@ class ApiClient {
       throw error
     }
   }
+
 
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'GET' })
