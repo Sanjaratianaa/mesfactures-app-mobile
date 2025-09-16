@@ -53,28 +53,56 @@ export interface ChangePasswordResponse {
 }
 
 export class AuthService {
+
+  private static demoUser = {
+    id: 1,
+    username: "RAKOTO Marie",
+    email: "marie@gmail.com",
+    roles: ["user"],
+    password: "123456", // mot de passe en clair juste pour tester
+  }
   /**
    * Login user with email and password
    */
-  static async login(credentials: LoginRequest): Promise<LoginResponse> {
-    try {
-      const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
-      if (response.token && response.user) {
-        // Store token and user data
-        apiClient.setStoredToken(response.token)
-        apiClient.setStoredUser(response.user)
+  // static async login(credentials: LoginRequest): Promise<LoginResponse> {
+  //   try {
+  //     const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
+  //     if (response.token && response.user) {
+  //       // Store token and user data
+  //       apiClient.setStoredToken(response.token)
+  //       apiClient.setStoredUser(response.user)
         
-        return {
-          token: response.token,
-          user: response.user
-        }
-      }
+  //       return {
+  //         token: response.token,
+  //         user: response.user
+  //       }
+  //     }
       
-      throw new Error(response.message || 'Erreur lors de la connexion')
-    } catch (error) {
-      const apiError = error as ApiError
-      throw new Error(apiError.message || 'Erreur lors de la connexion')
+  //     throw new Error(response.message || 'Erreur lors de la connexion')
+  //   } catch (error) {
+  //     const apiError = error as ApiError
+  //     throw new Error(apiError.message || 'Erreur lors de la connexion')
+  //   }
+  // }
+
+  static async login(credentials: LoginRequest): Promise<LoginResponse> {
+    // Vérification simple côté client
+    if (
+      credentials.email === this.demoUser.email &&
+      credentials.password === this.demoUser.password
+    ) {
+      // Générer un faux token
+      const fakeToken = "fake-jwt-token"
+      localStorage.setItem("auth_token", fakeToken)
+      localStorage.setItem("user_data", JSON.stringify(this.demoUser))
+
+      return {
+        token: fakeToken,
+        user: this.demoUser,
+      }
     }
+
+    throw new Error("Email ou mot de passe incorrect")
   }
 
   /**

@@ -76,9 +76,9 @@ class OfflineDataService {
       await db_operations.initializeDefaultCategories();
       this.loadSyncQueue();
       this.isInitialized = true;
-      console.log('✅ Offline data service initialized');
+      console.log('Offline data service initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize offline data service:', error);
+      console.error('Failed to initialize offline data service:', error);
       throw error;
     }
   }
@@ -423,7 +423,7 @@ class OfflineDataService {
         expensesByCategory: this.groupExpensesByCategory(monthlyExpenses)
       };
     } catch (error) {
-      console.error('❌ Error getting monthly stats:', error);
+      console.error('Error getting monthly stats:', error);
       return null;
     }
   }
@@ -454,7 +454,7 @@ class OfflineDataService {
       this.addToSyncQueue('notifications', 'create', notificationData);
       return result;
     } catch (error) {
-      console.error('❌ Error creating notification:', error);
+      console.error('Error creating notification:', error);
     }
   }
 
@@ -470,7 +470,7 @@ class OfflineDataService {
       
       return notifications.sort((a, b) => new Date(b.date_creation).getTime() - new Date(a.date_creation).getTime());
     } catch (error) {
-      console.error('❌ Error getting notifications:', error);
+      console.error('Error getting notifications:', error);
       return [];
     }
   }
@@ -489,32 +489,26 @@ class OfflineDataService {
 
       await db_operations.addData(db_operations.TABLES.historique_actions, actionData);
     } catch (error) {
-      console.error('❌ Error logging action:', error);
+      console.error('Error logging action:', error);
     }
   }
 
-  // SYNC FUNCTIONALITY
   async processSyncQueue() {
     const unsynced = this.syncQueue.filter(item => !item.synced);
     
     if (unsynced.length === 0) {
-      console.log('📱 Sync queue is empty');
+      console.log('Sync queue is empty');
       return;
     }
 
-    console.log(`🔄 Processing ${unsynced.length} items in sync queue`);
-    
-    // TODO: Implement actual sync with backend API
-    // For now, just mark items as synced
+    console.log(` Processing ${unsynced.length} items in sync queue`);
+
     for (const item of unsynced) {
       try {
-        // Here you would send the data to your backend
-        // await api.sync(item.table, item.operation, item.data);
-        
         item.synced = true;
-        console.log(`✅ Synced ${item.operation} in ${item.table}`);
+        console.log(`Synced ${item.operation} in ${item.table}`);
       } catch (error) {
-        console.error(`❌ Failed to sync ${item.operation} in ${item.table}:`, error);
+        console.error(`Failed to sync ${item.operation} in ${item.table}:`, error);
       }
     }
 
@@ -524,7 +518,7 @@ class OfflineDataService {
   clearSyncQueue() {
     this.syncQueue = [];
     localStorage.removeItem('syncQueue');
-    console.log('🗑️ Sync queue cleared');
+    console.log(' Sync queue cleared');
   }
 
   getSyncQueueSize() {

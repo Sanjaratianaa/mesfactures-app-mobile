@@ -10,10 +10,8 @@ export function WasmLoader({ children }: { children: React.ReactNode }) {
     if (typeof WebAssembly === 'object' && 
         typeof WebAssembly.instantiate === 'function') {
       
-      // Simple test to check if WebAssembly works
       const testWasm = async () => {
         try {
-          // This is a simple test to check if WebAssembly works
           const importObject = { 
             env: { 
               memory: new WebAssembly.Memory({ initial: 1 }) 

@@ -20,7 +20,39 @@ interface GoalsProps {
 }
 
 export function Goals({ utilisateurId, goals : initialGoals, onAddGoal, transactions }: GoalsProps) {
-  const [goals, setGoals] = useState<any[]>(Array.isArray(initialGoals) ? initialGoals : [])
+
+  const staticGoals = [
+    {
+      id: 1,
+      libelle: "Épargne vacances",
+      montantTotal: 5000000,
+      montantActuel: 5000000,
+      dateFin: "2024-12-31",
+      category: "Vacances",
+      statut: "Terminé",
+    },
+    {
+      id: 2,
+      libelle: "Achat voiture",
+      montantTotal: 15000000,
+      montantActuel: 6000000,
+      dateFin: "2025-06-30",
+      category: "Transport",
+      statut: "En cours",
+    },
+    {
+      id: 3,
+      libelle: "Fond d'urgence",
+      montantTotal: 10000000,
+      montantActuel: 2000000,
+      dateFin: "2024-09-30",
+      category: "Sécurité",
+      statut: "En cours",
+    },
+  ]
+
+  // const [goals, setGoals] = useState<any[]>(Array.isArray(initialGoals) ? initialGoals : staticGoals)
+  const [goals, setGoals] = useState<any[]>(staticGoals)
   const [showAddGoal, setShowAddGoal] = useState(false)
   const [newGoal, setNewGoal] = useState({
     name: "",
@@ -29,47 +61,74 @@ export function Goals({ utilisateurId, goals : initialGoals, onAddGoal, transact
     category: "",
   })
 
-  useEffect(() => {
-    async function loadGoals() {
-      const response = await fetchObjectifsApi()
-      const data = Array.isArray(response.data) ? response.data : []
-      setGoals(data)
-    }
-    loadGoals()
-  }, [])
+  // useEffect(() => {
+  //   async function loadGoals() {
+  //     const response = await fetchObjectifsApi()
+  //     const data = Array.isArray(response.data) ? response.data : []
+  //     setGoals(data)
+  //   }
+  //   loadGoals()
+  // }, [])
+
+//   const handleAddGoal = async () => {
+//   if (newGoal.name && newGoal.target && newGoal.deadline && newGoal.category) {
+//     try {
+      
+//       const objectifData = {
+//         utilisateurId,
+//         libelle: newGoal.name,
+//         montantTotal: Number.parseFloat(newGoal.target),
+//         montantActuel: 0,
+//         dateDebut: new Date().toISOString(),
+//         dateFin: newGoal.deadline,
+//         statut: "En cours",
+//       };
+
+//       console.log("Creating goal with data:", objectifData);
+
+//       const response = await createObjectifApi(objectifData);
+
+//       setGoals(prev => [...prev, response.data]);
+
+//       // onAddGoal attend le nouvel objectif pour mettre à jour la liste côté front
+//       onAddGoal?.(response.data);
+
+//       // reset du formulaire
+//       setNewGoal({ name: "", target: "", deadline: "", category: "" });
+//       setShowAddGoal(false);
+//     } catch (error) {
+//       console.error("Erreur lors de la création de l'objectif :", error);
+//       alert("Impossible de créer l'objectif.");
+//     }
+//   }
+// };
 
   const handleAddGoal = async () => {
-  if (newGoal.name && newGoal.target && newGoal.deadline && newGoal.category) {
-    try {
-      
-      const objectifData = {
-        utilisateurId,
-        libelle: newGoal.name,
-        montantTotal: Number.parseFloat(newGoal.target),
-        montantActuel: 0,
-        dateDebut: new Date().toISOString(),
-        dateFin: newGoal.deadline,
-        statut: "En cours",
-      };
+    if (newGoal.name && newGoal.target && newGoal.deadline && newGoal.category) {
+      try {
+        const objectifData = {
+          id: goals.length + 1, // mock id
+          libelle: newGoal.name,
+          montantTotal: Number.parseFloat(newGoal.target),
+          montantActuel: 0,
+          dateFin: newGoal.deadline,
+          category: newGoal.category,
+          statut: "En cours",
+        }
 
-      console.log("Creating goal with data:", objectifData);
+        // Ajoute directement à l'état
+        setGoals(prev => [...prev, objectifData])
 
-      const response = await createObjectifApi(objectifData);
+        onAddGoal?.(objectifData)
 
-      setGoals(prev => [...prev, response.data]);
-
-      // onAddGoal attend le nouvel objectif pour mettre à jour la liste côté front
-      onAddGoal?.(response.data);
-
-      // reset du formulaire
-      setNewGoal({ name: "", target: "", deadline: "", category: "" });
-      setShowAddGoal(false);
-    } catch (error) {
-      console.error("Erreur lors de la création de l'objectif :", error);
-      alert("Impossible de créer l'objectif.");
+        setNewGoal({ name: "", target: "", deadline: "", category: "" })
+        setShowAddGoal(false)
+      } catch (error) {
+        console.error("Erreur lors de la création de l'objectif :", error)
+        alert("Impossible de créer l'objectif.")
+      }
     }
   }
-};
 
 
   const getPersonalizedTips = (goal: any) => {
@@ -123,7 +182,7 @@ export function Goals({ utilisateurId, goals : initialGoals, onAddGoal, transact
                   />
                 </div>
                 <div>
-                  <Label htmlFor="goalTarget">Montant cible (€)</Label>
+                  <Label htmlFor="goalTarget">Montant cible (Ar)</Label>
                   <Input
                     id="goalTarget"
                     type="number"

@@ -20,8 +20,191 @@ import {
   WifiOff,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { offlineDataService } from "@/services/offline-data"
-import { useOnline } from "@/hooks/use-online"
+// import { offlineDataService } from "@/services/offline-data"
+// import { useOnline } from "@/hooks/use-online"
+
+// Données de test directement dans le composant
+const testTransactions = [
+  // Revenus
+  { 
+    id: 1, 
+    title: "Salaire mensuel", 
+    category: "Revenus", 
+    type: "income", 
+    amount: 3200, 
+    date: "2025-09-01",
+    description: "Salaire du mois de septembre"
+  },
+  { 
+    id: 2, 
+    title: "Prime de performance", 
+    category: "Revenus", 
+    type: "income", 
+    amount: 500, 
+    date: "2025-09-15",
+    description: "Prime trimestrielle"
+  },
+  { 
+    id: 3, 
+    title: "Remboursement frais", 
+    category: "Revenus", 
+    type: "income", 
+    amount: 125, 
+    date: "2025-09-10",
+    description: "Remboursement frais de transport"
+  },
+
+  // Alimentation
+  { 
+    id: 4, 
+    title: "Courses Carrefour", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -89.50, 
+    date: "2025-09-14",
+    description: "Courses hebdomadaires"
+  },
+  { 
+    id: 5, 
+    title: "Restaurant Le Jardin", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -42.80, 
+    date: "2025-09-13",
+    description: "Déjeuner d'affaires"
+  },
+  { 
+    id: 6, 
+    title: "Boulangerie Paul", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -12.30, 
+    date: "2025-09-12",
+    description: "Petit déjeuner"
+  },
+  { 
+    id: 7, 
+    title: "McDonald's", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -8.90, 
+    date: "2025-09-11",
+    description: "Repas rapide"
+  },
+
+  // Transport
+  { 
+    id: 8, 
+    title: "Station Total", 
+    category: "Transport", 
+    type: "expense", 
+    amount: -55.20, 
+    date: "2025-09-10",
+    description: "Plein d'essence"
+  },
+  { 
+    id: 9, 
+    title: "Péage autoroute", 
+    category: "Transport", 
+    type: "expense", 
+    amount: -18.40, 
+    date: "2025-09-09",
+    description: "Trajet Paris-Lyon"
+  },
+  { 
+    id: 10, 
+    title: "Uber", 
+    category: "Transport", 
+    type: "expense", 
+    amount: -15.80, 
+    date: "2025-09-06",
+    description: "Course vers aéroport"
+  },
+
+  // Logement
+  { 
+    id: 11, 
+    title: "Loyer appartement", 
+    category: "Logement", 
+    type: "expense", 
+    amount: -850, 
+    date: "2025-09-01",
+    description: "Loyer mensuel"
+  },
+  { 
+    id: 12, 
+    title: "EDF", 
+    category: "Logement", 
+    type: "expense", 
+    amount: -78.50, 
+    date: "2025-09-03",
+    description: "Facture électricité"
+  },
+
+  // Loisirs
+  { 
+    id: 13, 
+    title: "Cinéma UGC", 
+    category: "Loisirs", 
+    type: "expense", 
+    amount: -24.50, 
+    date: "2025-09-14",
+    description: "2 places de cinéma"
+  },
+  { 
+    id: 14, 
+    title: "Netflix", 
+    category: "Loisirs", 
+    type: "expense", 
+    amount: -13.49, 
+    date: "2025-09-05",
+    description: "Abonnement mensuel"
+  },
+
+  // Santé
+  { 
+    id: 15, 
+    title: "Pharmacie Monge", 
+    category: "Santé", 
+    type: "expense", 
+    amount: -15.60, 
+    date: "2025-09-11",
+    description: "Médicaments"
+  },
+  { 
+    id: 16, 
+    title: "Dr. Martin (généraliste)", 
+    category: "Santé", 
+    type: "expense", 
+    amount: -25, 
+    date: "2025-09-08",
+    description: "Consultation médicale"
+  },
+
+  // Shopping
+  { 
+    id: 17, 
+    title: "Zara", 
+    category: "Shopping", 
+    type: "expense", 
+    amount: -95.80, 
+    date: "2025-09-12",
+    description: "Vêtements automne"
+  },
+  { 
+    id: 18, 
+    title: "Amazon", 
+    category: "Shopping", 
+    type: "expense", 
+    amount: -34.99, 
+    date: "2025-09-09",
+    description: "Livre et accessoires"
+  }
+]
+
+const testCategories = [
+  "Alimentation", "Transport", "Logement", "Loisirs", "Santé", "Shopping", "Revenus", "Autres"
+]
 
 interface TransactionsProps {
   user: any
@@ -39,8 +222,9 @@ const categoryColors: Record<string, string> = {
 }
 
 export function Transactions({ user }: TransactionsProps) {
-  const [transactions, setTransactions] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  // Utilisation directe des données de test
+  const [transactions, setTransactions] = useState<any[]>(testTransactions)
+  const [loading, setLoading] = useState(true) // Simule le chargement initial
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -48,47 +232,53 @@ export function Transactions({ user }: TransactionsProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [categories, setCategories] = useState<string[]>([])
-  const isOnline = useOnline()
+  const [categories] = useState<string[]>(testCategories)
+  // const isOnline = useOnline() // Commenté car pas utilisé avec les données statiques
 
-  // Load transactions from offline database
+  // Simule un chargement initial
   useEffect(() => {
-    loadTransactions()
-    loadCategories()
-  }, [user?.id])
-
-  const loadTransactions = async () => {
-    if (!user?.id) return
-
-    try {
-      setLoading(true)
-      setError(null)
-
-      // Load transactions from offline service
-      const userTransactions = await offlineDataService.getTransactions(user.id, 200, 0)
-      setTransactions(userTransactions)
-
-      console.log(`✅ Loaded ${userTransactions.length} transactions from database`)
-    } catch (err) {
-      console.error('❌ Error loading transactions:', err)
-      setError('Erreur lors du chargement des transactions')
-    } finally {
+    const timer = setTimeout(() => {
       setLoading(false)
-    }
-  }
+    }, 800) // Simule 800ms de chargement
+    return () => clearTimeout(timer)
+  }, [])
 
-  const loadCategories = async () => {
-    try {
-      const allCategories = await offlineDataService.getCategories()
-      const categoryNames = Array.from(new Set([
-        ...allCategories.map(cat => cat.nom),
-        ...transactions.map(t => t.category)
-      ]))
-      setCategories(categoryNames)
-    } catch (err) {
-      console.error('❌ Error loading categories:', err)
-    }
-  }
+  // Commenté : Load transactions from offline database
+  // useEffect(() => {
+  //   loadTransactions()
+  //   loadCategories()
+  // }, [user?.id])
+
+  // Commenté : fonction de chargement depuis la base
+  // const loadTransactions = async () => {
+  //   if (!user?.id) return
+  //   try {
+  //     setLoading(true)
+  //     setError(null)
+  //     const userTransactions = await offlineDataService.getTransactions(user.id, 200, 0)
+  //     setTransactions(userTransactions)
+  //     console.log(`✅ Loaded ${userTransactions.length} transactions from database`)
+  //   } catch (err) {
+  //     console.error('❌ Error loading transactions:', err)
+  //     setError('Erreur lors du chargement des transactions')
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
+  // Commenté : fonction de chargement des catégories
+  // const loadCategories = async () => {
+  //   try {
+  //     const allCategories = await offlineDataService.getCategories()
+  //     const categoryNames = Array.from(new Set([
+  //       ...allCategories.map(cat => cat.nom),
+  //       ...transactions.map(t => t.category)
+  //     ]))
+  //     setCategories(categoryNames)
+  //   } catch (err) {
+  //     console.error('❌ Error loading categories:', err)
+  //   }
+  // }
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch =
@@ -116,44 +306,56 @@ export function Transactions({ user }: TransactionsProps) {
     return matchesSearch && matchesCategory && matchesType && matchesDateRange
   })
 
+  // Simulation du refresh pour tester l'UI
   const handleRefresh = async () => {
-    if (!user?.id) return
-
     setIsRefreshing(true)
-    
-    try {
-      // Reload data from database
-      await loadTransactions()
-      await loadCategories()
-      
-      console.log('✅ Transactions refreshed')
-    } catch (error) {
-      console.error('❌ Error refreshing transactions:', error)
-      setError('Erreur lors de l\'actualisation')
-    } finally {
+    // Simule un délai de refresh
+    setTimeout(() => {
       setIsRefreshing(false)
-    }
+      console.log('✅ Transactions refreshed (simulation)')
+    }, 1000)
   }
 
+  // Simulation de suppression avec les données statiques
   const deleteTransaction = async (id: number, type: 'income' | 'expense') => {
-    if (!user?.id) return
-
     try {
-      // Delete from offline database
-      await offlineDataService.deleteTransaction(user.id, id, type)
-      
-      // Remove from local state immediately for better UX
+      // Supprime directement de l'état local
       setTransactions(prev => prev.filter(t => t.id !== id))
-      
-      console.log(`✅ Transaction ${id} deleted`)
+      console.log(`✅ Transaction ${id} deleted (simulation)`)
     } catch (error) {
       console.error('❌ Error deleting transaction:', error)
       setError('Erreur lors de la suppression')
-      
-      // Reload transactions to restore state if deletion failed
-      await loadTransactions()
     }
   }
+
+  // Commenté : versions originales avec base de données
+  // const handleRefresh = async () => {
+  //   if (!user?.id) return
+  //   setIsRefreshing(true)
+  //   try {
+  //     await loadTransactions()
+  //     await loadCategories()
+  //     console.log('✅ Transactions refreshed')
+  //   } catch (error) {
+  //     console.error('❌ Error refreshing transactions:', error)
+  //     setError('Erreur lors de l\'actualisation')
+  //   } finally {
+  //     setIsRefreshing(false)
+  //   }
+  // }
+
+  // const deleteTransaction = async (id: number, type: 'income' | 'expense') => {
+  //   if (!user?.id) return
+  //   try {
+  //     await offlineDataService.deleteTransaction(user.id, id, type)
+  //     setTransactions(prev => prev.filter(t => t.id !== id))
+  //     console.log(`✅ Transaction ${id} deleted`)
+  //   } catch (error) {
+  //     console.error('❌ Error deleting transaction:', error)
+  //     setError('Erreur lors de la suppression')
+  //     await loadTransactions()
+  //   }
+  // }
 
   const clearFilters = () => {
     setSearchTerm("")
@@ -163,6 +365,7 @@ export function Transactions({ user }: TransactionsProps) {
     setEndDate("")
   }
 
+  // Export avec données statiques (simulation)
   const exportToCSV = () => {
     try {
       const csvContent =
@@ -183,19 +386,23 @@ export function Transactions({ user }: TransactionsProps) {
       link.click()
       document.body.removeChild(link)
       
-      console.log('✅ Transactions exported to CSV')
+      console.log('✅ Transactions exported to CSV (simulation)')
     } catch (error) {
       console.error('❌ Error exporting transactions:', error)
       setError('Erreur lors de l\'export')
     }
   }
 
+  // Export des données utilisateur (simulation)
   const exportUserData = async () => {
-    if (!user?.id) return
-
     try {
-      // Export all user data from offline service
-      const userData = await offlineDataService.exportUserData(user.id)
+      // Utilise les données de test pour l'export
+      const userData = {
+        user: user,
+        transactions: transactions,
+        categories: categories,
+        exportDate: new Date().toISOString()
+      }
       
       const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' })
       const link = document.createElement("a")
@@ -209,7 +416,7 @@ export function Transactions({ user }: TransactionsProps) {
       link.click()
       document.body.removeChild(link)
       
-      console.log('✅ User data exported')
+      console.log('✅ User data exported (simulation)')
     } catch (error) {
       console.error('❌ Error exporting user data:', error)
       setError('Erreur lors de l\'export complet')
@@ -277,11 +484,13 @@ export function Transactions({ user }: TransactionsProps) {
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <CreditCard className="w-6 h-6 text-primary" />
               Transactions
-              {!isOnline && <WifiOff className="w-5 h-5 text-red-500 ml-2" />}
+              {/* Commenté : indicateur hors ligne */}
+              {/* {!isOnline && <WifiOff className="w-5 h-5 text-red-500 ml-2" />} */}
             </h1>
             <p className="text-muted-foreground">
-              Historique de vos opérations
-              {!isOnline && <span className="text-red-600 ml-2">(Mode hors ligne)</span>}
+              Historique de vos opérations (données de test)
+              {/* Commenté : indicateur mode hors ligne */}
+              {/* {!isOnline && <span className="text-red-600 ml-2">(Mode hors ligne)</span>} */}
             </p>
           </div>
           {/* Refresh Button */}
@@ -456,7 +665,7 @@ export function Transactions({ user }: TransactionsProps) {
                     <div className="text-right">
                       <p className={`text-lg font-bold ${transaction.amount > 0 ? "text-green-600" : "text-red-600"}`}>
                         {transaction.amount > 0 ? "+" : ""}
-                        {transaction.amount.toFixed(2)} €
+                        {transaction.amount.toFixed(2)} Ar
                       </p>
                     </div>
                     {/* Delete Button */}

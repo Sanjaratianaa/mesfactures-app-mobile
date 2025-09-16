@@ -63,25 +63,275 @@ export function MainApp({ user, onLogout }: MainAppProps) {
 
   // Data
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [goals, setGoals] = useState<GoalWithColor[]>([])
-  const [loans, setLoans] = useState<LoanWithExtras[]>([])
-  const [userStats, setUserStats] = useState<UserStats>({
+  // const [goals, setGoals] = useState<GoalWithColor[]>([])
+  // const [loans, setLoans] = useState<LoanWithExtras[]>([])
+  const [userStats, setUserStats] = useState({
     level: 3,
     xp: 750,
     xpToNext: 1000,
     streak: 12,
     badges: ["first_budget", "savings_master", "consistent_tracker"],
     monthlyChallenge: {
-      name: "Économiser 200€",
+      name: "Économiser 200Ar",
       progress: 150,
       target: 200,
       reward: 100,
     },
-    transactionCount: 0,
-    totalExpenses: 0,
-    totalRevenues: 0,
-    balance: 0,
   })
+
+  const testTransactions = [
+  // Revenus
+  { 
+    id: 1, 
+    title: "Salaire mensuel", 
+    category: "Revenus", 
+    type: "income", 
+    amount: 3200, 
+    date: "2025-09-01",
+    description: "Salaire du mois de septembre"
+  },
+  { 
+    id: 2, 
+    title: "Prime de performance", 
+    category: "Revenus", 
+    type: "income", 
+    amount: 500, 
+    date: "2025-09-15",
+    description: "Prime trimestrielle"
+  },
+  { 
+    id: 3, 
+    title: "Remboursement frais", 
+    category: "Revenus", 
+    type: "income", 
+    amount: 125, 
+    date: "2025-09-10",
+    description: "Remboursement frais de transport"
+  },
+
+  // Alimentation
+  { 
+    id: 4, 
+    title: "Courses Carrefour", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -89.50, 
+    date: "2025-09-14",
+    description: "Courses hebdomadaires"
+  },
+  { 
+    id: 5, 
+    title: "Restaurant Le Jardin", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -42.80, 
+    date: "2025-09-13",
+    description: "Déjeuner d'affaires"
+  },
+  { 
+    id: 6, 
+    title: "Boulangerie Paul", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -12.30, 
+    date: "2025-09-12",
+    description: "Petit déjeuner"
+  },
+  { 
+    id: 7, 
+    title: "McDonald's", 
+    category: "Alimentation", 
+    type: "expense", 
+    amount: -8.90, 
+    date: "2025-09-11",
+    description: "Repas rapide"
+  },
+
+  // Transport
+  { 
+    id: 8, 
+    title: "Station Total", 
+    category: "Transport", 
+    type: "expense", 
+    amount: -55.20, 
+    date: "2025-09-10",
+    description: "Plein d'essence"
+  },
+  { 
+    id: 9, 
+    title: "Péage autoroute", 
+    category: "Transport", 
+    type: "expense", 
+    amount: -18.40, 
+    date: "2025-09-09",
+    description: "Trajet Paris-Lyon"
+  },
+  { 
+    id: 10, 
+    title: "Uber", 
+    category: "Transport", 
+    type: "expense", 
+    amount: -15.80, 
+    date: "2025-09-06",
+    description: "Course vers aéroport"
+  },
+
+  // Logement
+  { 
+    id: 11, 
+    title: "Loyer appartement", 
+    category: "Logement", 
+    type: "expense", 
+    amount: -850, 
+    date: "2025-09-01",
+    description: "Loyer mensuel"
+  },
+  { 
+    id: 12, 
+    title: "EDF", 
+    category: "Logement", 
+    type: "expense", 
+    amount: -78.50, 
+    date: "2025-09-03",
+    description: "Facture électricité"
+  },
+
+  // Loisirs
+  { 
+    id: 13, 
+    title: "Cinéma UGC", 
+    category: "Loisirs", 
+    type: "expense", 
+    amount: -24.50, 
+    date: "2025-09-14",
+    description: "2 places de cinéma"
+  },
+  { 
+    id: 14, 
+    title: "Netflix", 
+    category: "Loisirs", 
+    type: "expense", 
+    amount: -13.49, 
+    date: "2025-09-05",
+    description: "Abonnement mensuel"
+  },
+
+  // Santé
+  { 
+    id: 15, 
+    title: "Pharmacie Monge", 
+    category: "Santé", 
+    type: "expense", 
+    amount: -15.60, 
+    date: "2025-09-11",
+    description: "Médicaments"
+  },
+  { 
+    id: 16, 
+    title: "Dr. Martin (généraliste)", 
+    category: "Santé", 
+    type: "expense", 
+    amount: -25, 
+    date: "2025-09-08",
+    description: "Consultation médicale"
+  },
+
+  // Shopping
+  { 
+    id: 17, 
+    title: "Zara", 
+    category: "Shopping", 
+    type: "expense", 
+    amount: -95.80, 
+    date: "2025-09-12",
+    description: "Vêtements automne"
+  },
+  { 
+    id: 18, 
+    title: "Amazon", 
+    category: "Shopping", 
+    type: "expense", 
+    amount: -34.99, 
+    date: "2025-09-09",
+    description: "Livre et accessoires"
+  }
+]
+
+  const [loans, setLoans] = useState([
+    {
+      id: 1,
+      name: "Prêt immobilier",
+      amount: 150000,
+      rate: 1.5,
+      duration: 240,
+      startDate: "2023-01-01",
+      monthlyPayment: 717.42,
+      remainingAmount: 145000,
+      nextPaymentDate: "2024-02-01",
+    },
+    {
+      id: 2,
+      name: "Prêt auto",
+      amount: 25000,
+      rate: 3.2,
+      duration: 60,
+      startDate: "2023-06-01",
+      monthlyPayment: 451.58,
+      remainingAmount: 18500,
+      nextPaymentDate: "2024-02-15",
+    },
+  ])
+
+  const [goals, setGoals] = useState([
+    {
+      id: 1,
+      name: "Vacances d'été",
+      target: 2000,
+      current: 1200,
+      deadline: "2024-06-01",
+      category: "Loisirs",
+      color: "#3b82f6",
+    },
+    {
+      id: 2,
+      name: "Fonds d'urgence",
+      target: 5000,
+      current: 3200,
+      deadline: "2024-12-31",
+      category: "Épargne",
+      color: "#10b981",
+    },
+  ])
+
+  const staticGoals = [
+    {
+      id: 1,
+      libelle: "Épargne vacances",
+      montantTotal: 5000000,
+      montantActuel: 5000000,
+      dateFin: "2024-12-31",
+      category: "Vacances",
+      statut: "Terminé",
+    },
+    {
+      id: 2,
+      libelle: "Achat voiture",
+      montantTotal: 15000000,
+      montantActuel: 6000000,
+      dateFin: "2025-06-30",
+      category: "Transport",
+      statut: "En cours",
+    },
+    {
+      id: 3,
+      libelle: "Fond d'urgence",
+      montantTotal: 10000000,
+      montantActuel: 2000000,
+      dateFin: "2024-09-30",
+      category: "Sécurité",
+      statut: "En cours",
+    },
+  ]
 
   // Initialize offline data service
   useEffect(() => {
@@ -228,26 +478,27 @@ export function MainApp({ user, onLogout }: MainAppProps) {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard user={user} transactions={transactions} goals={goals} userStats={userStats} />
+        return <Dashboard user={user} transactions={testTransactions} goals={staticGoals} userStats={userStats} />
       case "transactions":
         return <Transactions user={user} />
       case "budgets":
         return <Budgets transactions={transactions} />
       case "loans":
-        return <Loans
-          loans={loans.map(l => ({
-            id: l.id ?? 0,
-            name: l.description,        // correspond à 'name' attendu
-            amount: l.montant,
-            rate: l.taux,
-            duration: l.duree,
-            startDate: l.date_debut,
-            monthlyPayment: l.mensualite,
-            remainingAmount: l.remainingAmount,
-            nextPaymentDate: l.nextPaymentDate,
-          }))}
-          onAddLoan={addLoan}
-        />
+        // return <Loans
+        //   loans={loans.map(l => ({
+        //     id: l.id ?? 0,
+        //     name: l.description,        // correspond à 'name' attendu
+        //     amount: l.montant,
+        //     rate: l.taux,
+        //     duration: l.duree,
+        //     startDate: l.date_debut,
+        //     monthlyPayment: l.mensualite,
+        //     remainingAmount: l.remainingAmount,
+        //     nextPaymentDate: l.nextPaymentDate,
+        //   }))}
+        //   onAddLoan={addLoan}
+        // />
+        return <Loans loans={loans} onAddLoan={addLoan} />
       case "goals":
         return <Goals utilisateurId={user.id} goals={goals} onAddGoal={addGoal} transactions={transactions} />
       case "gamification":
@@ -255,7 +506,7 @@ export function MainApp({ user, onLogout }: MainAppProps) {
       case "profile":
         return <Profile user={user} onLogout={onLogout} />
       default:
-        return <Dashboard user={user} transactions={transactions} goals={goals} userStats={userStats} />
+        return <Dashboard user={user} transactions={testTransactions} goals={staticGoals} userStats={userStats} />
     }
   }
 

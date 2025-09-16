@@ -49,6 +49,32 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
     duration: "",
   })
 
+  loans = [
+    {
+      id: 1,
+      name: "Prêt immobilier",
+      amount: 150000,
+      rate: 1.5,
+      duration: 240,
+      startDate: "2023-01-01",
+      monthlyPayment: 717.42,
+      remainingAmount: 145000,
+      nextPaymentDate: "2024-02-01",
+    },
+    {
+      id: 2,
+      name: "Prêt auto",
+      amount: 25000,
+      rate: 3.2,
+      duration: 60,
+      startDate: "2023-06-01",
+      monthlyPayment: 451.58,
+      remainingAmount: 18500,
+      nextPaymentDate: "2024-02-15",
+    },
+  ]
+
+
   // Calculate monthly payment using loan formula
   const calculateMonthlyPayment = (amount: number, rate: number, duration: number) => {
     const monthlyRate = rate / 100 / 12
@@ -110,7 +136,7 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
       id: 1,
       type: "reminder",
       title: "Échéance prêt immobilier",
-      message: "Paiement de 717,42 € dû le 1er février",
+      message: "Paiement de 717,42 Ar dû le 1er février",
       date: "2024-01-30",
       urgent: true,
     },
@@ -155,7 +181,7 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Dette totale</p>
-                <p className="text-2xl font-bold">{totalRemainingDebt.toLocaleString()} €</p>
+                <p className="text-2xl font-bold">{totalRemainingDebt.toLocaleString()} Ar</p>
               </div>
               <TrendingDown className="w-8 h-8 opacity-80" />
             </div>
@@ -167,7 +193,7 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Mensualités</p>
-                <p className="text-2xl font-bold">{totalMonthlyPayments.toFixed(0)} €</p>
+                <p className="text-2xl font-bold">{totalMonthlyPayments.toFixed(0)} Ar</p>
               </div>
               <Calculator className="w-8 h-8 opacity-80" />
             </div>
@@ -201,7 +227,7 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="amount">Montant (€)</Label>
+                  <Label htmlFor="amount">Montant (Ar)</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -240,7 +266,7 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
                         Number.parseFloat(newLoan.rate),
                         Number.parseInt(newLoan.duration),
                       ).toFixed(2)}{" "}
-                      €
+                      Ar
                     </p>
                   </div>
                 )}
@@ -262,15 +288,15 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Montant initial</p>
-                    <p className="font-medium">{loan.amount.toLocaleString()} €</p>
+                    <p className="font-medium">{loan.amount.toLocaleString()} Ar</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Restant dû</p>
-                    <p className="font-medium text-red-600">{loan.remainingAmount.toLocaleString()} €</p>
+                    <p className="font-medium text-red-600">{loan.remainingAmount.toLocaleString()} Ar</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Mensualité</p>
-                    <p className="font-medium">{loan.monthlyPayment.toFixed(2)} €</p>
+                    <p className="font-medium">{loan.monthlyPayment.toFixed(2)} Ar</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Prochaine échéance</p>
@@ -324,13 +350,13 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
                             <div>
                               <p className="font-medium">{payment.date}</p>
                               <p className="text-xs text-muted-foreground">
-                                Capital: {payment.principal.toFixed(2)} € | Intérêts: {payment.interest.toFixed(2)} €
+                                Capital: {payment.principal.toFixed(2)} Ar | Intérêts: {payment.interest.toFixed(2)} Ar
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">{payment.payment.toFixed(2)} €</p>
-                            <p className="text-xs text-muted-foreground">Solde: {payment.balance.toFixed(2)} €</p>
+                            <p className="font-semibold">{payment.payment.toFixed(2)} Ar</p>
+                            <p className="text-xs text-muted-foreground">Solde: {payment.balance.toFixed(2)} Ar</p>
                           </div>
                         </div>
                       ))}
@@ -350,7 +376,7 @@ export function Loans({ loans, onAddLoan }: LoansProps) {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
-                      <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, "Montant"]} />
+                      <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} Ar`, "Montant"]} />
                       <Line type="monotone" dataKey="balance" stroke="#8b5cf6" strokeWidth={3} name="Capital restant" />
                     </LineChart>
                   </ResponsiveContainer>

@@ -64,7 +64,7 @@ export function parseOCRText(ocrText: string): ParsedInvoiceData {
     
     // Look for total amount
     if (upperLine.includes('TOTAL TTC') || upperLine.includes('TOTAL')) {
-      const amountMatch = line.match(/(\d+[\s,.]?\d*)[€\s]/);
+      const amountMatch = line.match(/(\d+[\s,.]?\d*)[Ar\s]/);
       if (amountMatch) {
         const amount = amountMatch[1].replace(/[\s,]/g, '.').replace(/[^\d.]/g, '');
         parsedData.montant = parseFloat(amount) || 0;

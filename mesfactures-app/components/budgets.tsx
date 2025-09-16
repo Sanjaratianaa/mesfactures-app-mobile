@@ -83,8 +83,8 @@ export function Budgets({ transactions }: BudgetsProps) {
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">Budget total utilisé</p>
             <p className="text-2xl font-bold text-foreground">
-              {budgets.reduce((sum, b) => sum + b.spent, 0).toFixed(2)} € /{" "}
-              {budgets.reduce((sum, b) => sum + b.limit, 0)} €
+              {budgets.reduce((sum, b) => sum + b.spent, 0).toFixed(2)} Ar /{" "}
+              {budgets.reduce((sum, b) => sum + b.limit, 0)} Ar
             </p>
             <div className="mt-3">
               <Progress
@@ -123,7 +123,7 @@ export function Budgets({ transactions }: BudgetsProps) {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)} €`, name]} />
+                <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)} Ar`, name]} />
               </RechartsPieChart>
             </ResponsiveContainer>
             <div className="mt-2 space-y-1">
@@ -154,7 +154,7 @@ export function Budgets({ transactions }: BudgetsProps) {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="category" angle={-45} textAnchor="end" height={80} />
                 <YAxis />
-                <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, "Montant"]} />
+                <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} Ar`, "Montant"]} />
                 <Bar dataKey="budget" fill="#e5e7eb" name="Budget" />
                 <Bar dataKey="spent" fill="#9bc53d" name="Dépensé" />
               </BarChart>
@@ -176,7 +176,7 @@ export function Budgets({ transactions }: BudgetsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, "Dépenses"]} />
+              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} Ar`, "Dépenses"]} />
               <Line type="monotone" dataKey="alimentation" stroke="#f97316" strokeWidth={2} name="Alimentation" />
               <Line type="monotone" dataKey="transport" stroke="#3b82f6" strokeWidth={2} name="Transport" />
               <Line type="monotone" dataKey="loisirs" stroke="#8b5cf6" strokeWidth={2} name="Loisirs" />
@@ -204,7 +204,7 @@ export function Budgets({ transactions }: BudgetsProps) {
                   <div className="flex items-center gap-2">
                     <StatusIcon className={`w-4 h-4 ${status.color}`} />
                     <span className="text-sm font-medium text-foreground">
-                      {budget.spent.toFixed(2)} € / {budget.limit} €
+                      {budget.spent.toFixed(2)} Ar / {budget.limit} Ar
                     </span>
                   </div>
                 </div>
@@ -227,8 +227,8 @@ export function Budgets({ transactions }: BudgetsProps) {
                     <span>{percentage.toFixed(1)}% utilisé</span>
                     <span>
                       {budget.spent < budget.limit
-                        ? `${(budget.limit - budget.spent).toFixed(2)} € restant`
-                        : `${(budget.spent - budget.limit).toFixed(2)} € dépassé`}
+                        ? `${(budget.limit - budget.spent).toFixed(2)} Ar restant`
+                        : `${(budget.spent - budget.limit).toFixed(2)} Ar dépassé`}
                     </span>
                   </div>
                 </div>

@@ -27,6 +27,9 @@ interface DashboardProps {
 }
 
 export function Dashboard({ user, transactions, userStats, goals }: DashboardProps) {
+
+  console.log("Goals to render:", goals);
+  
   const totalBalance = transactions.reduce((sum, t) => sum + t.amount, 0)
   const monthlyExpenses = transactions
     .filter((t) => t.type === "expense")
@@ -114,7 +117,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Solde total</p>
-              <p className="text-3xl font-bold text-foreground">{totalBalance.toFixed(2)} €</p>
+              <p className="text-3xl font-bold text-foreground">{totalBalance.toFixed(2)} Ar</p>
             </div>
             <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
               <Wallet className="w-6 h-6 text-primary" />
@@ -137,19 +140,19 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{goal.name}</span>
                   <span className="text-sm text-muted-foreground">
-                    {goal.current}€ / {goal.target}€
+                    {goal.montantActuel} Ar / {goal.montantTotal} Ar
                   </span>
                 </div>
                 <Progress
-                  value={(goal.current / goal.target) * 100}
+                  value={(goal.montantActuel / goal.montantTotal) * 100}
                   className="h-2"
                   style={{
                     background: `linear-gradient(to right, ${goal.color}20, ${goal.color}40)`,
                   }}
                 />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{Math.round((goal.current / goal.target) * 100)}% atteint</span>
-                  <span>Échéance: {new Date(goal.deadline).toLocaleDateString()}</span>
+                  <span>{Math.round((goal.montantActuel / goal.montantTotal) * 100)}% atteint</span>
+                  <span>Échéance: {new Date(goal.dateFin).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}
@@ -167,7 +170,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Dépenses</p>
-                <p className="text-lg font-semibold text-foreground">{monthlyExpenses.toFixed(2)} €</p>
+                <p className="text-lg font-semibold text-foreground">{monthlyExpenses.toFixed(2)} Ar</p>
               </div>
             </div>
           </CardContent>
@@ -181,7 +184,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Revenus</p>
-                <p className="text-lg font-semibold text-foreground">{monthlyIncome.toFixed(2)} €</p>
+                <p className="text-lg font-semibold text-foreground">{monthlyIncome.toFixed(2)} Ar</p>
               </div>
             </div>
           </CardContent>
@@ -213,7 +216,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
             />
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                {userStats.monthlyChallenge.progress}€ / {userStats.monthlyChallenge.target}€
+                {userStats.monthlyChallenge.progress}Ar / {userStats.monthlyChallenge.target}Ar
               </span>
               <span className="text-blue-600 font-medium">+{userStats.monthlyChallenge.reward} XP</span>
             </div>
@@ -237,7 +240,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, "Montant"]} />
+              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} Ar`, "Montant"]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 space-y-1">
@@ -247,7 +250,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
                   <span>{entry.name}</span>
                 </div>
-                <span className="font-medium">{Number(entry.value).toFixed(2)} €</span>
+                <span className="font-medium">{Number(entry.value).toFixed(2)} Ar</span>
               </div>
             ))}
           </div>
@@ -268,7 +271,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
               <YAxis dataKey="category" type="category" width={80} />
-              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, "Montant"]} />
+              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} Ar`, "Montant"]} />
               <Bar dataKey="budget" fill="#e5e7eb" name="Budget" />
               <Bar dataKey="spent" fill="#9bc53d" name="Dépensé" />
             </BarChart>
@@ -290,7 +293,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, "Montant"]} />
+              <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} Ar`, "Montant"]} />
               <Line type="monotone" dataKey="revenus" stroke="#9bc53d" strokeWidth={3} name="Revenus" />
               <Line type="monotone" dataKey="depenses" stroke="#ef4444" strokeWidth={3} name="Dépenses" />
             </LineChart>
@@ -310,7 +313,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Dépensé ce mois</span>
-              <span className="font-medium">{monthlyExpenses.toFixed(2)} € / 1500 €</span>
+              <span className="font-medium">{monthlyExpenses.toFixed(2)} Ar / 1500 Ar</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
@@ -320,7 +323,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
             </div>
             <p className="text-xs text-muted-foreground">
               {monthlyExpenses < 1500
-                ? `Il vous reste ${(1500 - monthlyExpenses).toFixed(2)} € ce mois`
+                ? `Il vous reste ${(1500 - monthlyExpenses).toFixed(2)} Ar ce mois`
                 : "Budget dépassé !"}
             </p>
           </div>
@@ -342,7 +345,7 @@ export function Dashboard({ user, transactions, userStats, goals }: DashboardPro
               <div className="text-right">
                 <p className={`font-semibold ${transaction.amount > 0 ? "text-green-600" : "text-red-600"}`}>
                   {transaction.amount > 0 ? "+" : ""}
-                  {transaction.amount.toFixed(2)} €
+                  {transaction.amount.toFixed(2)} Ar
                 </p>
                 <p className="text-xs text-muted-foreground">{transaction.date}</p>
               </div>

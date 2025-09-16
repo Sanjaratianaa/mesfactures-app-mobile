@@ -137,7 +137,7 @@ export function AddExpenseModal({ open, onClose, onAdd }: AddExpenseModalProps) 
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Montant (€)</Label>
+            <Label htmlFor="amount">Montant (Ar)</Label>
             <Input
               id="amount"
               type="number"

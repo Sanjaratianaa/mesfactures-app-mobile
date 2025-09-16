@@ -210,7 +210,7 @@ export function AddInvoiceModal({ open, onClose, onAdd }: AddInvoiceModalProps) 
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div><strong>Fournisseur:</strong> {parsedData.fournisseur}</div>
                 <div><strong>Type:</strong> {parsedData.typeFacture}</div>
-                <div><strong>Montant:</strong> {parsedData.montant}€</div>
+                <div><strong>Montant:</strong> {parsedData.montant}Ar</div>
                 <div><strong>Date émission:</strong> {parsedData.dateEmission.toLocaleDateString()}</div>
                 <div><strong>Date échéance:</strong> {parsedData.dateEcheance.toLocaleDateString()}</div>
                 <div><strong>Statut:</strong> {parsedData.statut}</div>

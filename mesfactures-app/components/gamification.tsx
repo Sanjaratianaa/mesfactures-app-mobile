@@ -16,7 +16,7 @@ export function Gamification({ userStats, setUserStats }: GamificationProps) {
     {
       id: "savings_master",
       name: "Maître de l'épargne",
-      description: "Économiser 500€ en un mois",
+      description: "Économiser 500Ar en un mois",
       icon: "💰",
       earned: true,
     },
@@ -53,8 +53,8 @@ export function Gamification({ userStats, setUserStats }: GamificationProps) {
   const challenges = [
     {
       id: 1,
-      name: "Économiser 200€",
-      description: "Atteignez 200€ d'économies ce mois",
+      name: "Économiser 200Ar",
+      description: "Atteignez 200Ar d'économies ce mois",
       progress: userStats.monthlyChallenge.progress,
       target: userStats.monthlyChallenge.target,
       reward: 100,
