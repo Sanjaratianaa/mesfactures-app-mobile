@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/services/api";
+
 export interface ParsedInvoiceData {
   fournisseur: string;
   typeFacture: string;
@@ -75,12 +77,12 @@ export function parseOCRText(ocrText: string): ParsedInvoiceData {
 
 // API service to send data to your backend
 export async function saveInvoiceToAPI(invoiceData: ParsedInvoiceData, userId: number): Promise<any> {
-  const API_BASE_URL = process.env.NODE_ENV === 'development' 
-    ? 'https://your-codespace-api-url.app.github.dev' // Replace with your actual API URL
+  const BASE_URL = process.env.NODE_ENV === 'development' 
+    ? API_BASE_URL // Replace with your actual API URL
     : 'https://your-production-api.com';
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/factures/ocr`, {
+    const response = await fetch(`${BASE_URL}/api/factures/ocr`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

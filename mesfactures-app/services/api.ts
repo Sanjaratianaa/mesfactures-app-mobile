@@ -1,7 +1,6 @@
 // API configuration and common utilities
-// const API_BASE_URL = 'http://localhost:5000/api'
+const API_BASE_URL = 'http://localhost:5000/api'
 // const API_BASE_URL = 'https://projet-transversal-api.onrender.com/api'
-const API_BASE_URL = 'https://opulent-dollop-j645jgrpjxgf5jgp-5000.app.github.dev/api'
 
 export interface ApiResponse<T> {
   data?: T
@@ -46,7 +45,7 @@ class ApiClient {
       ...options,
     }
 
-  // console.log('🚀 Making API request:', { url, method: config.method || 'GET', body: options.body })
+    console.log('🚀 Making API request:', { url, method: config.method || 'GET', body: options.body })
 
     try {
       const response = await fetch(url, config)

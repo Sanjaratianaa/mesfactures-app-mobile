@@ -145,17 +145,17 @@ export function AddInvoiceModal({ open, onClose, onAdd }: AddInvoiceModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-md sm:max-w-md p-2 sm:p-6">
+      <DialogContent className="w-full max-w-md sm:max-w-md p-2 sm:p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Ajouter une facture (OCR)</DialogTitle>
+          <DialogTitle>Ajouter une facture</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Importez une photo ou un PDF de votre facture, ou prenez une photo avec la caméra. Le texte sera extrait automatiquement.
+          Importez une photo ou un PDF de votre facture, ou prenez une photo avec la caméra.
         </DialogDescription>
   <div className="space-y-4 w-full">
           {/* Import photo/PDF */}
           <div className="space-y-2">
-            <Label htmlFor="invoice-file">Photo ou PDF de la facture</Label>
+            <Label htmlFor="invoice-file">Facture photo / PDF</Label>
             <Input id="invoice-file" type="file" accept="image/*,application/pdf" onChange={handleFileChange} />
           </div>
           {/* Prendre une photo */}
